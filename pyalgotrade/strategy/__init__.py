@@ -623,6 +623,6 @@ class LiveStrategy(BacktestingStrategy):
 
     def onBars(self, bars):
         try:
-            fsm.StateMachine.run(self, bars)
+            self.__fsminst.run(bars)
         except Exception as e:
             logger.error('Exception while running sate machine. %s' % str(e))
