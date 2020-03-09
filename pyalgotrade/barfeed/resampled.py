@@ -62,7 +62,7 @@ class ResampledBarFeed(barfeed.BaseBarFeed):
 
         # Register the same instruments as in the underlying barfeed.
         for instrument in barFeed.getRegisteredInstruments():
-            self.registerInstrument(instrument)
+            self.registerInstrument(instrument, frequency)
 
         self.__values = []
         self.__barFeed = barFeed

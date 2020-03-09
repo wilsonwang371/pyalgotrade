@@ -45,14 +45,19 @@ class BaseBarFeed(feed.BaseFeed):
 
     def __init__(self, frequency, maxLen=None):
         super(BaseBarFeed, self).__init__(maxLen)
-        self.__frequency = frequency
+        if isinstance(frequency, list):
+            self.__frequencies = frequency
+        else:
+            self.__frequencies = [frequency]
         self.__useAdjustedValues = False
         self.__defaultInstrument = None
         self.__currentBars = None
+        self.__currentRealtimeBars = None
         self.__lastBars = {}
 
     def reset(self):
         self.__currentBars = None
+        self.__currentRealtimeBars = None
         self.__lastBars = {}
         super(BaseBarFeed, self).reset()
 
@@ -92,30 +97,38 @@ class BaseBarFeed(feed.BaseFeed):
 
     def getNextValues(self):
         dateTime = None
+        freq = None
         bars = self.getNextBars()
         if bars is not None:
+            freq = bars.getBarFrequency()
             dateTime = bars.getDateTime()
 
             # Check that current bar datetimes are greater than the previous one.
-            if self.__currentBars is not None and self.__currentBars.getDateTime() >= dateTime:
-                raise Exception(
-                    "Bar date times are not in order. Previous datetime was %s and current datetime is %s" % (
-                        self.__currentBars.getDateTime(),
-                        dateTime
+            if self.__currentBars is not None and self.__currentBars.getDateTime() > dateTime:
+                if freq == self.__currentBars.getBarFrequency():
+                    raise Exception(
+                        "Bar date times are not in order. Previous datetime was %s and current datetime is %s" % (
+                            self.__currentBars.getDateTime(),
+                            dateTime
+                        )
                     )
-                )
 
             # Update self.__currentBars and self.__lastBars
             self.__currentBars = bars
             for instrument in bars.getInstruments():
                 self.__lastBars[instrument] = bars[instrument]
-        return (dateTime, bars)
+        return (dateTime, bars, freq)
 
     def getFrequency(self):
-        return self.__frequency
+        return self.__frequencies
 
     def isIntraday(self):
-        return self.__frequency < bar.Frequency.DAY
+        for i in self.__frequencies:
+            if i < bar.Frequency.DAY:
+                return True
+
+    def getCurrentRealtimeBars(self):
+        return self.__currentRealtimeBars
 
     def getCurrentBars(self):
         """Returns the current :class:`pyalgotrade.bar.Bars`."""
@@ -133,11 +146,11 @@ class BaseBarFeed(feed.BaseFeed):
         """Returns a list of registered intstrument names."""
         return self.getKeys()
 
-    def registerInstrument(self, instrument):
+    def registerInstrument(self, instrument, freq):
         self.__defaultInstrument = instrument
-        self.registerDataSeries(instrument)
+        self.registerDataSeries(instrument, freq)
 
-    def getDataSeries(self, instrument=None):
+    def getDataSeries(self, instrument=None, freq=None):
         """Returns the :class:`pyalgotrade.dataseries.bards.BarDataSeries` for a given instrument.
 
         :param instrument: Instrument identifier. If None, the default instrument is returned.
@@ -146,10 +159,23 @@ class BaseBarFeed(feed.BaseFeed):
         """
         if instrument is None:
             instrument = self.__defaultInstrument
-        return self[instrument]
+        return self[instrument, freq]
 
     def getDispatchPriority(self):
         return dispatchprio.BAR_FEED
+
+
+class MultiFrequencyBarFeed(BaseBarFeed):
+    def __init__(self, frequencies, maxLen=None):
+        super(MultiFrequencyBarFeed, self).__init__(frequency=None, maxLen=maxLen)
+        assert isinstance(frequencies, list)
+        self.__frequencies = frequencies
+
+    def getFrequency(self):
+        raise Exception('{0} has multiple frequencies.'.format(self.__class__))
+
+    def getFrequencies(self):
+        return self.__frequencies
 
 
 # This class is used by the optimizer module. The barfeed is already built on the server side,
@@ -158,7 +184,7 @@ class OptimizerBarFeed(BaseBarFeed):
     def __init__(self, frequency, instruments, bars, maxLen=None):
         super(OptimizerBarFeed, self).__init__(frequency, maxLen)
         for instrument in instruments:
-            self.registerInstrument(instrument)
+            self.registerInstrument(instrument, frequency)
         self.__bars = bars
         self.__nextPos = 0
         self.__currDateTime = None

@@ -27,23 +27,28 @@ class Frequency(object):
 
     """Enum like class for bar frequencies. Valid values are:
 
+    * **Frequency.UNKNOWN**: The bar represents an unknown frequency trade.
     * **Frequency.TRADE**: The bar represents a single trade.
     * **Frequency.SECOND**: The bar summarizes the trading activity during 1 second.
     * **Frequency.MINUTE**: The bar summarizes the trading activity during 1 minute.
     * **Frequency.HOUR**: The bar summarizes the trading activity during 1 hour.
+    * **Frequency.HOUR_4**: The bar summarizes the trading activity during 4 hour.
     * **Frequency.DAY**: The bar summarizes the trading activity during 1 day.
     * **Frequency.WEEK**: The bar summarizes the trading activity during 1 week.
     * **Frequency.MONTH**: The bar summarizes the trading activity during 1 month.
     """
 
     # It is important for frequency values to get bigger for bigger windows.
-    TRADE = -1
-    SECOND = 1
-    MINUTE = 60
-    HOUR = 60*60
-    DAY = 24*60*60
-    WEEK = 24*60*60*7
-    MONTH = 24*60*60*31
+    UNKNOWN     = -2
+    TRADE       = -1
+    REALTIME    = 0
+    SECOND      = 1
+    MINUTE      = 60
+    HOUR        = 60*60
+    HOUR_4      = 60*60*4
+    DAY         = 24*60*60
+    WEEK        = 24*60*60*7
+    MONTH       = 24*60*60*31
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -253,7 +258,7 @@ class Bars(object):
         All bars must have the same datetime.
     """
 
-    def __init__(self, barDict):
+    def __init__(self, barDict, frequecy=None):
         if len(barDict) == 0:
             raise Exception("No bars supplied")
 
@@ -274,6 +279,7 @@ class Bars(object):
 
         self.__barDict = barDict
         self.__dateTime = firstDateTime
+        self.__frequency = frequecy
 
     def __getitem__(self, instrument):
         """Returns the :class:`pyalgotrade.bar.Bar` for the given instrument.
@@ -301,3 +307,6 @@ class Bars(object):
     def getBar(self, instrument):
         """Returns the :class:`pyalgotrade.bar.Bar` for the given instrument or None if the instrument is not found."""
         return self.__barDict.get(instrument, None)
+
+    def getBarFrequency(self):
+        return self.__frequency

@@ -28,6 +28,7 @@ Main Features
  * Handling Twitter events in realtime.
  * Event profiler.
  * TA-Lib integration.
+ * New realtime processing support
 
 Installation
 ------------
@@ -42,9 +43,16 @@ PyAlgoTrade is developed and tested using Python 2.7/3.7 and depends on:
  * [ws4py](https://github.com/Lawouach/WebSocket-for-Python) for Bitstamp support.
  * [tornado](http://www.tornadoweb.org/en/stable/) for Bitstamp support.
  * [tweepy](https://github.com/tweepy/tweepy) for Twitter support.
-
+ 
 You can install PyAlgoTrade using pip like this:
 
 ```
 pip install pyalgotrade
 ```
+
+Realtime Processing
+------------
+
+Now realtime data processing is enabled. The strategy can accept multiple time frequencies so that some special
+needs can be met. For example, I want to monitor minute data to guide my trade which is mainly based on daily
+OHLC data. In this way, I can avoid significant loss when price made a `yuge' change during a day.

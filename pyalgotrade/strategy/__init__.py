@@ -604,3 +604,8 @@ class BacktestingStrategy(BaseStrategy):
         level = logging.DEBUG if debugOn else logging.INFO
         self.getLogger().setLevel(level)
         self.getBroker().getLogger().setLevel(level)
+
+
+class LiveStrategy(BacktestingStrategy):
+    def __init__(self, barFeed, cash_or_brk=1000000):
+        BacktestingStrategy.__init__(self, barFeed, cash_or_brk=cash_or_brk)
