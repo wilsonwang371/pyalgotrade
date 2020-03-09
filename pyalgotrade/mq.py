@@ -9,15 +9,16 @@ import sys
 import threading
 import time
 
-import pandas as pd
-import pika
 import six
 
+import pandas as pd
+import pika
+import pika.exceptions
 import pyalgotrade.logger
 from pyalgotrade import bar, dispatchprio, feed
 from pyalgotrade.barfeed import BaseBarFeed, MultiFrequencyBarFeed
-from pyalgotrade.utils.misc import protected_function, pyGo
 from pyalgotrade.fsm import StateMachine, state
+from pyalgotrade.utils.misc import protected_function, pyGo
 
 # This is only for backward compatibility since Frequency used to be defined here and not in bar.py.
 Frequency = bar.Frequency
@@ -80,7 +81,11 @@ class MQConsumer(StateMachine):
         params = pika.URLParameters(self.url)
         params.socket_timeout = 5
 
-        connection = pika.BlockingConnection(params) # Connect to CloudAMQP
+        try:
+            connection = pika.BlockingConnection(params) # Connect to CloudAMQP
+        except pika.exceptions.AMQPConnectionError:
+            logger.error('Failed to connect to AMQP server.')
+            return MQConsumerStates.DISCONNECTED
         channel = connection.channel()
 
         channel.queue_declare(queue=self.queue_name) # Declare a queue
@@ -200,7 +205,11 @@ class MQProducer(StateMachine):
         params = pika.URLParameters(self.url)
         params.socket_timeout = 5
 
-        connection = pika.BlockingConnection(params) # Connect to CloudAMQP
+        try:
+            connection = pika.BlockingConnection(params) # Connect to CloudAMQP
+        except pika.exceptions.AMQPConnectionError:
+            logger.error('Failed to connect to AMQP server.')
+            return MQProducerStates.DISCONNECTED
         channel = connection.channel()
 
         channel.queue_declare(queue=self.queue_name) # Declare a queue

@@ -9,16 +9,12 @@ import sys
 import threading
 import time
 
-import pandas as pd
-import pika
-import six
-
 import pyalgotrade.logger
 import pyalgotrade.mq as mq
 from pyalgotrade import bar, dispatchprio, feed
 from pyalgotrade.barfeed import BaseBarFeed, MultiFrequencyBarFeed
-from pyalgotrade.utils.misc import protected_function, pyGo
 from pyalgotrade.fsm import StateMachine, state
+from pyalgotrade.utils.misc import protected_function, pyGo
 
 # This is only for backward compatibility since Frequency used to be defined here and not in bar.py.
 Frequency = bar.Frequency
