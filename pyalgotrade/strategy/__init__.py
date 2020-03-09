@@ -33,7 +33,7 @@ from pyalgotrade.barfeed import resampled
 from pyalgotrade.broker import backtesting
 
 coloredlogs.install(level='INFO')
-logger = pyalgotrade.logger.getLogger('livebarfeed')
+logger = pyalgotrade.logger.getLogger('strategy')
 
 
 @six.add_metaclass(abc.ABCMeta)
