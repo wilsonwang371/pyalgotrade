@@ -33,7 +33,7 @@ from pyalgotrade.barfeed import resampled
 from pyalgotrade.broker import backtesting
 
 coloredlogs.install(level='INFO')
-logger = pyalgotrade.logger.getLogger('strategy')
+log = pyalgotrade.logger.getLogger('strategy')
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -613,7 +613,7 @@ class BacktestingStrategy(BaseStrategy):
 class LiveStrategy(BacktestingStrategy):
     def __init__(self, barFeed, fsmclass, cash_or_brk=1000000):
         BacktestingStrategy.__init__(self, barFeed, cash_or_brk=cash_or_brk)
-        assert(isinstance(fsmclass, fsm.StateMachine))
+        assert(issubclass(fsmclass, fsm.StrategyFSM))
         self.__state = None
         self.__fsmclass = fsmclass
         self.__barfeed = barFeed
@@ -625,4 +625,4 @@ class LiveStrategy(BacktestingStrategy):
         try:
             self.__fsminst.run(bars)
         except Exception as e:
-            logger.error('Exception while running sate machine. %s' % str(e))
+            log.error('Exception while running sate machine. %s' % str(e))

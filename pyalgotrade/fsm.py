@@ -86,41 +86,14 @@ class StateMachine(object):
             self.run(*args, **kwargs)
 
 
-if __name__ == '__main__':
-    class MyStates(enum.Enum):
-        INIT = 0
-        STATE1 = 1
-        STATE2 = 2
-        STATE3 = 3
-        END = 4
+class StrategyFSM(StateMachine):
+    ''' state machine used by strategy runner
+    '''
 
-    class Test(StateMachine):
+    def __init__(self, barfeed):
+        super(StrategyFSM, self).__init__()
+        self.__barfeed = barfeed
 
-        @state(MyStates.INIT, True)
-        def init(self):
-            logger.info('INIT')
-            return MyStates.STATE1
-        
-        @state(MyStates.STATE1, False)
-        def state1(self):
-            logger.info('STATE1')
-            return MyStates.STATE2
-
-        @state(MyStates.STATE2, False)
-        def state2(self):
-            logger.info('STATE2')
-            return MyStates.STATE3
-
-        @state(MyStates.STATE3, False)
-        def state3(self):
-            logger.info('STATE3')
-            return MyStates.END
-
-        @state(MyStates.END, False)
-        def end(self):
-            logger.info('END')
-            sys.exit(0)
-
-    a = Test()
-    while True:
-        a.run()
+    @property
+    def barfeed(self):
+        return self.__barfeed

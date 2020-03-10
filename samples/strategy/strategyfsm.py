@@ -1,8 +1,8 @@
 import enum
 import sys
+
 import pyalgotrade.fsm as fsm
 import pyalgotrade.logger
-
 
 logger = pyalgotrade.logger.getLogger('strategyfsm')
 
@@ -15,11 +15,10 @@ class SampleStrategyFSMState(enum.Enum):
     ERROR = 99
 
 
-class SampleStrategyFSM(fsm.StateMachine):
+class SampleStrategyFSM(fsm.StrategyFSM):
 
     def __init__(self, barfeed):
-        super(SampleStrategyFSM, self).__init__()
-        self.__barfeed = barfeed
+        super(SampleStrategyFSM, self).__init__(barfeed)
 
     @fsm.state(SampleStrategyFSMState.INIT, True)
     def state_init(self, bars):
