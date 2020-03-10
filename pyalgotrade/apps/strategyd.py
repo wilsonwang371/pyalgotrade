@@ -26,14 +26,18 @@ logger = pyalgotrade.logger.getLogger(__name__)
 
 
 def parse_args():
+    # for testing purpose, I use these options:
+    #   -f ./samples/strategy/strategyfsm.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
     parser = argparse.ArgumentParser(prog=sys.argv[0],
         description='runner program for StrategyFSM class.')
     parser.add_argument('-f', '--strategyfsm-file', dest='file',
         required=True,
         help='a StrategyFSM python file to load')
-    parser.add_argument('-s', '--symbol', dest='symbol', default='XAUUSD',
+    parser.add_argument('-s', '--symbol', dest='symbol',
+        required=True,
         help='strategy resource symbol name')
-    parser.add_argument('-u', '--url', dest='url', default='amqp://guest:guest@localhost/%2f',
+    parser.add_argument('-u', '--url', dest='url',
+        required=True,
         help='amqp protocol url')
     return parser.parse_args()
 
@@ -73,6 +77,9 @@ def main():
     except Exception:
         logger.error('{}'.format(traceback.format_exc()))
         sys.exit(-1)
+    except KeyboardInterrupt:
+        logger.info('terminating...')
+        sys.exit(0)
 
 
 if __name__ == '__main__':
