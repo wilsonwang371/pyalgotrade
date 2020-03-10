@@ -619,6 +619,7 @@ class LiveStrategy(BacktestingStrategy):
         self.__barfeed = barFeed
 
     def onStart(self):
+        log.info('initializing StrategyFSM...')
         self.__fsminst = self.__fsmclass(self.__barfeed)
 
     def onBars(self, bars):
