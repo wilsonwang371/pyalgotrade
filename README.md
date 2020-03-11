@@ -97,7 +97,7 @@ We need at least 3 components running
 
 ## Example
 An example for running a strategyd and ibagent is:
-```shell
+```bash
 # to run ibagent
 python3 pyalgotrade/apps/ibagent.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
 
