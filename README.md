@@ -57,6 +57,8 @@ Now realtime data processing is enabled. The strategy can accept multiple time f
 needs can be met. For example, I want to monitor minute data to guide my trade which is mainly based on daily
 OHLC data. In this way, I can avoid significant loss when price made a `yuge' change during a day.
 
+# Realtime Topology
+
 A realtime processing example topology. Here we use IB Agent. We can use other agents as well in the future.
 
 ```
@@ -82,4 +84,18 @@ A realtime processing example topology. Here we use IB Agent. We can use other a
              |                 |
              |                 |
              +-----------------+
+```
+
+# Execution
+
+We need at least 3 components running
+
+*  Strategyd: a process that runs your strategy implemented as a subclass of StrategyFSM.
+*  Agent: fetch and/or generate data and send it to message queue for strategyd to consume.
+*  RabbitMQ: message queue that receives and dispatch market data.
+
+An example for running a strategyd and ibagent is:
+```shell
+python3 pyalgotrade/apps/ibagent.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
+python3 pyalgotrade/apps/strategyd.py -f ./samples/strategy/strategyfsm.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
 ```
