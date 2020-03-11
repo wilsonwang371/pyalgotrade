@@ -88,12 +88,20 @@ class StateMachine(object):
 
 class StrategyFSM(StateMachine):
     ''' state machine used by strategy runner
+        each state should have 2 arguments.
+        The first one is "bars" and the second
+        one is "states"
     '''
 
-    def __init__(self, barfeed):
+    def __init__(self, barfeed, states):
         super(StrategyFSM, self).__init__()
         self.__barfeed = barfeed
+        self.__states = states
 
     @property
     def barfeed(self):
         return self.__barfeed
+
+    @property
+    def state(self):
+        return self.__states

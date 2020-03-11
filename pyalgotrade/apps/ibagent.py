@@ -1,3 +1,4 @@
+import argparse
 import datetime as dt
 import enum
 import sys
@@ -29,18 +30,27 @@ class IBDataAgentFSMState(enum.Enum):
     SUBSCRIBED = 3
     ERROR = 99
 
+tuple_dict = {
+    GOLD_SYMBOL: XAUUSD_TUPLE,
+}
 
 class IBDataAgent(StateMachine):
+
+    def __init__(self, url, queue, symbol):
+        super(IBDataAgent, self).__init__()
+        self.__url = url
+        self.__symbol = symbol
+        self.__queue = queue
 
     @state(IBDataAgentFSMState.INIT, True)
     def init(self):
         self.__producer = {}
         self.__contracts = [
-            XAUUSD_TUPLE,
+            tuple_dict[self.__symbol],
         ]
         for i in self.__contracts:
-            tmp = MQProducer(RABBITMQ_AMQP_URL_DEFAULT,
-                QUEUE_NAME)
+            tmp = MQProducer(self.__url,
+                self.__queue)
             tmp.start()
             self.__producer[str(i)] = tmp
 
@@ -76,7 +86,7 @@ class IBDataAgent(StateMachine):
                 time.sleep(SLEEP_TIME)
                 return IBDataAgentFSMState.SUBSCRIBING
             data = {
-                'symbol': QUEUE_NAME,
+                'symbol': contract_tuple[0],
                 'timestamp': row['time'],
                 'open': row['price'],
                 'high': row['price'],
@@ -105,8 +115,23 @@ class IBDataAgent(StateMachine):
         sys.exit(-1)
 
 
-if __name__ == '__main__':
-    agent = IBDataAgent()
+def parse_args():
+    # for testing purpose, I use these options:
+    #  -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
+    parser = argparse.ArgumentParser(prog=sys.argv[0],
+        description='IB(Interactive Brokers) data agent.')
+    parser.add_argument('-s', '--symbol', dest='symbol',
+        required=True,
+        help='strategy resource symbol name')
+    parser.add_argument('-u', '--url', dest='url',
+        required=True,
+        help='amqp protocol url')
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    agent = IBDataAgent(args.url, args.symbol, args.symbol)
     try:
         while True:
             agent.run()
@@ -114,3 +139,7 @@ if __name__ == '__main__':
         logger.info('Terminating...')
     except Exception as e:
         logger.error('Fatal error: %s' % str(e))
+
+
+if __name__ == '__main__':
+    main()

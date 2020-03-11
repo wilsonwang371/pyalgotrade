@@ -609,21 +609,22 @@ class BacktestingStrategy(BaseStrategy):
         self.getLogger().setLevel(level)
         self.getBroker().getLogger().setLevel(level)
 
+from pyalgotrade.strategy.state import StrategyState
 
 class LiveStrategy(BacktestingStrategy):
     def __init__(self, barFeed, fsmclass, cash_or_brk=1000000):
         BacktestingStrategy.__init__(self, barFeed, cash_or_brk=cash_or_brk)
         assert(issubclass(fsmclass, fsm.StrategyFSM))
-        self.__state = None
+        self.__states = StrategyState()
         self.__fsmclass = fsmclass
         self.__barfeed = barFeed
 
     def onStart(self):
         log.info('initializing StrategyFSM...')
-        self.__fsminst = self.__fsmclass(self.__barfeed)
+        self.__fsminst = self.__fsmclass(barfeed=self.__barfeed, states=self.__states)
 
     def onBars(self, bars):
         try:
-            self.__fsminst.run(bars)
+            self.__fsminst.run(bars=bars, states=self.__states)
         except Exception as e:
             log.error('Exception while running sate machine. %s' % str(e))

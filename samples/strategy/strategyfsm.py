@@ -17,25 +17,32 @@ class SampleStrategyFSMState(enum.Enum):
 
 class SampleStrategyFSM(fsm.StrategyFSM):
 
-    def __init__(self, barfeed):
-        super(SampleStrategyFSM, self).__init__(barfeed)
+    def __init__(self, barfeed, states):
+        super(SampleStrategyFSM, self).__init__(barfeed, states)
+
+    def print_bars(self, bars):
+        for i in bars.getInstruments():
+            logger.info('{} {} {}'.format(i, bars[i].getDateTime(), bars[i].getClose()))
 
     @fsm.state(SampleStrategyFSMState.INIT, True)
-    def state_init(self, bars):
+    def state_init(self, bars, states):
         logger.info('INIT')
+        self.print_bars(bars)
         return SampleStrategyFSMState.STATE1
     
     @fsm.state(SampleStrategyFSMState.STATE1, False)
-    def state_state1(self, bars):
+    def state_state1(self, bars, states):
         logger.info('STATE1')
+        self.print_bars(bars)
         return SampleStrategyFSMState.STATE2
 
     @fsm.state(SampleStrategyFSMState.STATE2, False)
-    def state_state2(self, bars):
+    def state_state2(self, bars, states):
         logger.info('STATE2')
+        self.print_bars(bars)
         return SampleStrategyFSMState.ERROR
     
     @fsm.state(SampleStrategyFSMState.ERROR, False)
-    def state_error(self, bars):
+    def state_error(self, bars, states):
         logger.info('ERROR')
         sys.exit(0)
