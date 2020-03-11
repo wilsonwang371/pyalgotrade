@@ -59,6 +59,7 @@ OHLC data. In this way, I can avoid significant loss when price made a `yuge' ch
 
 A realtime processing example topology. Here we use IB Agent. We can use other agents as well in the future.
 
+```
 +-------------+              +--------------+                   +-------------+
 |             |              |              |                   |             |
 |             |              |              |                   |             |
@@ -81,3 +82,4 @@ A realtime processing example topology. Here we use IB Agent. We can use other a
              |                 |
              |                 |
              +-----------------+
+```
