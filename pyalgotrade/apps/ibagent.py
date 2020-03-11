@@ -16,10 +16,10 @@ from pyalgotrade.utils.misc import protected_function, pyGo
 coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)
 
-GOLD_SYMBOL = 'XAUUSD'
-QUEUE_NAME = GOLD_SYMBOL
-RABBITMQ_AMQP_URL_DEFAULT = 'amqp://guest:guest@localhost/%2f'
-XAUUSD_TUPLE = (GOLD_SYMBOL, 'CMDTY', 'SMART', 'USD', '', 0.0, '')
+#GOLD_SYMBOL = 'XAUUSD'
+#QUEUE_NAME = GOLD_SYMBOL
+#RABBITMQ_AMQP_URL_DEFAULT = 'amqp://guest:guest@localhost/%2f'
+#XAUUSD_TUPLE = (GOLD_SYMBOL, 'CMDTY', 'SMART', 'USD', '', 0.0, '')
 #GC_CONT_FUTURE_TUPLE = ('@GC', 'FUT', 'SMART', 'USD', '', 0.0, '')
 
 SLEEP_TIME = 10
@@ -31,7 +31,7 @@ class IBDataAgentFSMState(enum.Enum):
     ERROR = 99
 
 tuple_dict = {
-    GOLD_SYMBOL: XAUUSD_TUPLE,
+    'XAUUSD': ('XAUUSD', 'CMDTY', 'SMART', 'USD', '', 0.0, ''),
 }
 
 class IBDataAgent(StateMachine):
