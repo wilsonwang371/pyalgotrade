@@ -26,19 +26,27 @@ class SampleStrategyFSM(fsm.StrategyFSM):
 
     @fsm.state(SampleStrategyFSMState.INIT, True)
     def state_init(self, bars, states):
+        # You are only supposed to save states in states variable
+        # DO NOT save your local variable and it is not guaranteed to be supported later 
         logger.info('INIT')
+        print(states.prev)
+        states.prev = 'INIT'
         self.print_bars(bars)
         return SampleStrategyFSMState.STATE1
     
     @fsm.state(SampleStrategyFSMState.STATE1, False)
     def state_state1(self, bars, states):
         logger.info('STATE1')
+        print(states.prev)
+        states.prev = 'STATE1'
         self.print_bars(bars)
         return SampleStrategyFSMState.STATE2
 
     @fsm.state(SampleStrategyFSMState.STATE2, False)
     def state_state2(self, bars, states):
         logger.info('STATE2')
+        print(states.prev)
+        states.prev = 'STATE2'
         self.print_bars(bars)
         return SampleStrategyFSMState.ERROR
     
