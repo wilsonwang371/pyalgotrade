@@ -56,3 +56,28 @@ Realtime Processing
 Now realtime data processing is enabled. The strategy can accept multiple time frequencies so that some special
 needs can be met. For example, I want to monitor minute data to guide my trade which is mainly based on daily
 OHLC data. In this way, I can avoid significant loss when price made a `yuge' change during a day.
+
+A realtime processing example topology. Here we use IB Agent. We can use other agents as well in the future.
+
++-------------+              +--------------+                   +-------------+
+|             |              |              |                   |             |
+|             |              |              |                   |             |
+| Strategyd   |              |   IB  Agent  +------------------>+  IB Gateway |
+|             |              |              |                   |             |
+|             |              |              +<------------------+             |
+|             |              |              |                   |             |
+|             |              |              |                   |             |
++-------+-----+              +-------+------+                   +-------------+
+        ^                            |
+        |                            |
+        |                            |
+        |    +-----------------+     |
+        |    |                 |     |
+        |    |                 |     |
+        |    |                 |     |
+        +----+                 +<----+
+             |  RabbitMQ       |
+             |                 |
+             |                 |
+             |                 |
+             +-----------------+

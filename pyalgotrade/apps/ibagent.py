@@ -140,6 +140,7 @@ def main():
     except Exception as e:
         logger.error('Fatal error: %s' % str(e))
 
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
 
 if __name__ == '__main__':
     main()

@@ -81,6 +81,7 @@ def main():
         logger.info('terminating...')
         sys.exit(0)
 
+# PYTHONPATH='./' python3 pyalgotrade/apps/strategyd.py -f ./samples/strategy/strategyfsm.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
 
 if __name__ == '__main__':
     main()
