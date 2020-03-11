@@ -163,6 +163,18 @@ class MQProducer(StateMachine):
         self.databuf_cond = threading.Condition()
         self.url = server_url
         self.queue_name = queue_name
+        self.__properties = None
+
+    @property
+    def properties(self):
+        return self.__properties
+
+    @properties.setter
+    def properties(self, p):
+        if isinstance(p, pika.BasicProperties) or p is None:
+            self.__properties = p
+            return
+        logger.error('invalid property type for message queue')
 
     def put_one(self, data):
         self.databuf_cond.acquire()
@@ -230,7 +242,8 @@ class MQProducer(StateMachine):
             except:
                 logger.error('Cannot serialize data %s' % str(data))
                 continue
-            self.channel.basic_publish(exchange='', routing_key=self.queue_name, body=data)
+            self.channel.basic_publish(exchange='', routing_key=self.queue_name,
+                body=data, properties=self.__properties)
 
         return MQProducerStates.CONNECTED
 

@@ -3,9 +3,11 @@ import datetime as dt
 import enum
 import sys
 import time
+import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 
 import coloredlogs
+import pika
 import pyalgotrade.bar as bar
 import pyalgotrade.logger
 from pyalgotrade.barfeed.driver.ibdatadriver import IBDataDriver
@@ -23,6 +25,7 @@ logger = pyalgotrade.logger.getLogger(__name__)
 #GC_CONT_FUTURE_TUPLE = ('@GC', 'FUT', 'SMART', 'USD', '', 0.0, '')
 
 SLEEP_TIME = 10
+DATA_EXPIRE_SECONDS = 120
 
 class IBDataAgentFSMState(enum.Enum):
     INIT = 1
@@ -48,11 +51,14 @@ class IBDataAgent(StateMachine):
         self.__contracts = [
             tuple_dict[self.__symbol],
         ]
+        expire = 1000 * DATA_EXPIRE_SECONDS
+        expiration_prop = pika.BasicProperties(expiration=str(expire))
         for i in self.__contracts:
             tmp = MQProducer(self.__url,
                 self.__queue)
             tmp.start()
             self.__producer[str(i)] = tmp
+            tmp.properties = expiration_prop
 
         self.__driver = IBDataDriver()
         self.__driver.start()
@@ -137,8 +143,8 @@ def main():
             agent.run()
     except KeyboardInterrupt:
         logger.info('Terminating...')
-    except Exception as e:
-        logger.error('Fatal error: %s' % str(e))
+    except Exception:
+        logger.error(traceback.format_exc())
 
 # PYTHONPATH='./' python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
 
