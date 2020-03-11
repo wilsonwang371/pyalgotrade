@@ -1,4 +1,4 @@
-PyAlgoTrade
+# PyAlgoTrade
 ===========
 
 [![Build Status](https://travis-ci.org/gbeced/pyalgotrade.png?branch=master)](https://travis-ci.org/gbeced/pyalgotrade)
@@ -16,8 +16,7 @@ and **live trading** is now possible using:
 
 To get started with PyAlgoTrade take a look at the [tutorial](http://gbeced.github.io/pyalgotrade/docs/v0.20/html/tutorial.html) and the [full documentation](http://gbeced.github.io/pyalgotrade/docs/v0.20/html/index.html).
 
-Main Features
--------------
+# Main Features
 
  * Event driven.
  * Supports Market, Limit, Stop and StopLimit orders.
@@ -30,8 +29,7 @@ Main Features
  * TA-Lib integration.
  * New realtime processing support
 
-Installation
-------------
+# Installation
 
 PyAlgoTrade is developed and tested using Python 2.7/3.7 and depends on:
 
@@ -50,14 +48,16 @@ You can install PyAlgoTrade using pip like this:
 pip install pyalgotrade
 ```
 
-Realtime Processing
-------------
+# Realtime Processing
 
 Now realtime data processing is enabled. The strategy can accept multiple time frequencies so that some special
 needs can be met. For example, I want to monitor minute data to guide my trade which is mainly based on daily
 OHLC data. In this way, I can avoid significant loss when price made a `yuge' change during a day.
 
-# Realtime Topology
+## Design
+
+
+## Topology
 
 A realtime processing example topology. Here we use IB Agent. We can use other agents as well in the future.
 
@@ -86,7 +86,7 @@ A realtime processing example topology. Here we use IB Agent. We can use other a
              +-----------------+
 ```
 
-# Execution
+## Execution
 
 We need at least 3 components running
 
@@ -94,8 +94,18 @@ We need at least 3 components running
 *  Agent: fetch and/or generate data and send it to message queue for strategyd to consume.
 *  RabbitMQ: message queue that receives and dispatch market data.
 
+
+## Example
 An example for running a strategyd and ibagent is:
 ```shell
+# to run ibagent
 python3 pyalgotrade/apps/ibagent.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
+
+# to run a strategyd
 python3 pyalgotrade/apps/strategyd.py -f ./samples/strategy/strategyfsm.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
 ```
+
+
+# TODO
+
+I am planning to add support for TradeStation and other agents.
