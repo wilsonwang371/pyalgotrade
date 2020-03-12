@@ -24,7 +24,7 @@ class FX678DataAgentFSMStates(enum.Enum):
 class FX678DataAgent(StateMachine):
     
     def __init__(self, url, queue, symbol):
-        super(IBDataAgent, self).__init__()
+        super(FX678DataAgent, self).__init__()
         self.__url = url
         self.__symbol = symbol
         self.__queue = queue
