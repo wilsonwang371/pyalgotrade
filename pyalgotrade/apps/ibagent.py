@@ -92,6 +92,7 @@ class IBDataAgent(StateMachine):
             if not row:
                 time.sleep(SLEEP_TIME)
                 return IBDataAgentFSMState.SUBSCRIBING
+            assert row['source'] == 'ib'
             data = {
                 'symbol': contract_tuple[0],
                 'timestamp': row['time'],
@@ -100,6 +101,7 @@ class IBDataAgent(StateMachine):
                 'low': row['price'],
                 'close': row['price'],
                 'volume': row['price'],
+                'source': row['source'],
                 'freq': bar.Frequency.REALTIME
             }
             logger.debug('Task running for tuple %s' % str(contract_tuple))

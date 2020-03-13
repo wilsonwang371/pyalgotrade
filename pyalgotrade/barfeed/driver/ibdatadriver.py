@@ -163,13 +163,15 @@ class IBDataDriver(StateMachine):
                                            'high',
                                            'low',
                                            'close',
-                                           'volume'])
+                                           'volume',
+                                           'source'])
                 df.index.name = 'timestamp'
                 self.__tmp_historical_df[reqId] = df
             if msg.date[:8].lower() != 'finished':
-                series = pd.Series([msg.open, msg.high, msg.low, msg.close, msg.volume],
-                                   ['open', 'high', 'low',
-                                    'close', 'volume'])
+                series = pd.Series([msg.open, msg.high, msg.low,
+                    msg.close, msg.volume, 'ib'],
+                    ['open', 'high', 'low',
+                    'close', 'volume', 'source'])
 
                 self.__tmp_historical_df[reqId].loc[msg.date] = series
                 #logger.info('added {} date {}'.format(series, msg.date))
