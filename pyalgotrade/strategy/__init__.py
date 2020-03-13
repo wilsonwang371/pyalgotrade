@@ -31,6 +31,7 @@ import pyalgotrade.strategy.position
 from pyalgotrade import dispatcher, logger, observer
 from pyalgotrade.barfeed import resampled
 from pyalgotrade.broker import backtesting
+from pyalgotrade.strategy.state import StrategyState
 
 coloredlogs.install(level='INFO')
 log = pyalgotrade.logger.getLogger('strategy')
@@ -609,7 +610,6 @@ class BacktestingStrategy(BaseStrategy):
         self.getLogger().setLevel(level)
         self.getBroker().getLogger().setLevel(level)
 
-from pyalgotrade.strategy.state import StrategyState
 
 class LiveStrategy(BacktestingStrategy):
     def __init__(self, barFeed, fsmclass, cash_or_brk=1000000):
@@ -618,6 +618,10 @@ class LiveStrategy(BacktestingStrategy):
         self.__states = StrategyState()
         self.__fsmclass = fsmclass
         self.__barfeed = barFeed
+
+    @property
+    def states(self):
+        return self.__states
 
     def onStart(self):
         log.info('initializing StrategyFSM...')

@@ -53,6 +53,14 @@ class StrategyState:
         self.__states = obj
         self.__state_lock.release()
 
+    def __str__(self):
+        state_lock = getattr(self, '__state_lock')
+        states = getattr(self, '__states')
+        state_lock.acquire()
+        tmp = states.copy()
+        state_lock.release()
+        return json.dumps(tmp)
+
 
 if __name__ == '__main__':
     a = StrategyState()

@@ -7,6 +7,7 @@ import importlib.util as util
 import inspect
 import os.path
 import sys
+import threading
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
@@ -15,6 +16,7 @@ import coloredlogs
 import pyalgotrade.bar as bar
 import pyalgotrade.logger
 import pyalgotrade.strategy as strategy
+from flask import Flask
 from pyalgotrade.bar import Frequency
 from pyalgotrade.barfeed.driver.ibdatadriver import IBDataDriver
 from pyalgotrade.barfeed.livefeed import RabbitMQLiveBarFeed
@@ -40,7 +42,21 @@ def parse_args():
     parser.add_argument('-u', '--url', dest='url',
         required=True,
         help='amqp protocol url')
+    parser.add_argument('-S', '--web-server', dest='server', action='store_true',
+        help='start webserver for strategy state data monitoring')
+    parser.add_argument('-p', '--port', dest='port', type=int, default=80,
+        help='web server port')
     return parser.parse_args()
+
+
+def start_webserver(strategy, serverport):
+    app = Flask(__name__)
+
+    @app.route('/')
+    def hello_world():
+        return str(strategy.states)
+
+    threading.Thread(target=app.run, kwargs={'port': serverport}, daemon=True).start()
 
 
 def load_strategyfsm(filename):
@@ -73,6 +89,10 @@ def main():
         
         logger.info('creating strategy \'{}\'...'.format(strategyfsm_name))
         livestrategy = strategy.LiveStrategy(livefeed, strategyfsm_class)
+
+        if args.server:
+            logger.info('starting webserver...')
+            start_webserver(livestrategy, args.port)
 
         logger.info('starting strategy...')
         livestrategy.run()
