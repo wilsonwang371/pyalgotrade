@@ -1,6 +1,7 @@
 import argparse
 import datetime as dt
 import enum
+import errno
 import sys
 import time
 import traceback
@@ -118,7 +119,7 @@ class IBDataAgent(StateMachine):
     @state(IBDataAgentFSMState.ERROR, False)
     def error(self):
         logger.error('Fatal error, terminating...')
-        sys.exit(-1)
+        sys.exit(errno.EFAULT)
 
 
 def parse_args():

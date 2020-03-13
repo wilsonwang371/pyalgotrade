@@ -1,6 +1,7 @@
 import argparse
 import datetime as dt
 import enum
+import errno
 import importlib.machinery as machinery
 import importlib.util as util
 import inspect
@@ -60,6 +61,7 @@ def load_strategyfsm(filename):
         raise ValueError('no StrategyFSM subclass.')
     return (candids[0], getattr(mod, candids[0]))
 
+
 def main():
     try:
         args = parse_args()
@@ -76,7 +78,7 @@ def main():
         livestrategy.run()
     except Exception:
         logger.error('{}'.format(traceback.format_exc()))
-        sys.exit(-1)
+        sys.exit(errno.EFAULT)
     except KeyboardInterrupt:
         logger.info('terminating...')
         sys.exit(0)
