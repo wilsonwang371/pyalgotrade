@@ -34,7 +34,7 @@ class IBDataAgentFSMState(enum.Enum):
     SUBSCRIBED = 3
     ERROR = 99
 
-tuple_dict = {
+supported_symbols = {
     'XAUUSD': ('XAUUSD', 'CMDTY', 'SMART', 'USD', '', 0.0, ''),
 }
 
@@ -50,7 +50,7 @@ class IBDataAgent(StateMachine):
     def init(self):
         self.__producer = {}
         self.__contracts = [
-            tuple_dict[self.__symbol],
+            supported_symbols[self.__symbol],
         ]
         expire = 1000 * DATA_EXPIRE_SECONDS
         expiration_prop = pika.BasicProperties(expiration=str(expire))
@@ -140,6 +140,9 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.symbol not in supported_symbols:
+        logger.error('Unsupported symbol. Supported symbols are: {}'.format(list(supported_symbols.keys())))
+        sys.exit(errno.EINVAL)
     agent = IBDataAgent(args.url, args.symbol, args.symbol)
     try:
         while True:
