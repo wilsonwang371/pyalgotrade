@@ -21,6 +21,41 @@ coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)
 
 
+class OHLCData:
+    
+    def __init__(self):
+        self.__open = self.__high = self.__low = self.__close = None
+        self.begin_ts = self.end_ts = None
+
+    def add(self, timestamp, value):
+        if self.begin_ts is None:
+            self.begin_ts = timestamp
+        self.end_ts = timestamp
+        if self.__open is None:
+            self.__open = value
+        if self.__high is None or self.__high < value:
+            self.__high = value
+        if self.__low is None or self.__low > value:
+            self.__low = value
+        self.__close = value
+
+    @property
+    def open(self):
+        return self.__open
+    
+    @property
+    def high(self):
+        return self.__high
+    
+    @property
+    def low(self):
+        return self.__low
+
+    @property
+    def close(self):
+        return self.__close
+
+
 class TimeSeriesAgentFSMState(enum.Enum):
 
     INIT = 1
