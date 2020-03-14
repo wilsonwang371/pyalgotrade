@@ -21,6 +21,7 @@ logger = pyalgotrade.logger.getLogger(__name__)
 
 
 class TimeSeriesAgentFSMState(enum.Enum):
+
     INIT = 1
     READY = 2
     RETRY = 3
