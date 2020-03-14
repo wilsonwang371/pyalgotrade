@@ -7,7 +7,7 @@ import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 
-from six.queue import Queue
+from six.moves.queue import Queue
 
 import coloredlogs
 import pika
@@ -48,11 +48,13 @@ class TimeSeriesAgent(StateMachine):
             while True:
                 tmp = self.__consumer.fetch_one()
                 self.__inbuf.put(tmp)
-        pyGo(in_task)
         def out_task():
             while True:
                 tmp = self.__outbuf.get()
                 self.__producer.put_one(tmp)
+        self.__consumer.start()
+        self.__producer.start()
+        pyGo(in_task)
         pyGo(out_task)
         return TimeSeriesAgentFSMState.READY
 
@@ -60,6 +62,8 @@ class TimeSeriesAgent(StateMachine):
     @protected_function(TimeSeriesAgentFSMState.ERROR)
     def state_ready(self):
         #TODO: fetch inbuf and put outbuf
+        itm = self.__inbuf.get()
+        logger.info(itm)
         return TimeSeriesAgentFSMState.READY
     
     @state(TimeSeriesAgentFSMState.RETRY, False)
