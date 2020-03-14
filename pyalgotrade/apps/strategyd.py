@@ -5,6 +5,7 @@ import errno
 import importlib.machinery as machinery
 import importlib.util as util
 import inspect
+import os
 import os.path
 import sys
 import threading
@@ -29,8 +30,6 @@ logger = pyalgotrade.logger.getLogger(__name__)
 
 
 def parse_args():
-    # for testing purpose, I use these options:
-    #   -f ./samples/strategy/strategyfsm.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
     parser = argparse.ArgumentParser(prog=sys.argv[0],
         description='runner program for StrategyFSM class.')
     parser.add_argument('-f', '--strategyfsm-file', dest='file',
@@ -39,13 +38,16 @@ def parse_args():
     parser.add_argument('-s', '--symbol', dest='symbol',
         required=True,
         help='strategy resource symbol name')
+    parser.add_argument('-q', '--queue', dest='queue',
+        required=True,
+        help='message queue name')
     parser.add_argument('-u', '--url', dest='url',
         required=True,
         help='amqp protocol url')
     parser.add_argument('-S', '--web-server', dest='server', action='store_true',
         help='start webserver for strategy state data monitoring')
-    parser.add_argument('-p', '--port', dest='port', type=int, default=80,
-        help='web server port')
+    parser.add_argument('-p', '--port', dest='port', type=int, default=8000,
+        help='web server port, default: 8000')
     return parser.parse_args()
 
 
@@ -53,10 +55,21 @@ def start_webserver(strategy, serverport):
     app = Flask(__name__)
 
     @app.route('/')
-    def hello_world():
+    def strategy_state():
         return str(strategy.states)
 
-    threading.Thread(target=app.run, kwargs={'port': serverport}, daemon=True).start()
+    def server_task(app, serverport):
+        try:
+            app.run(port=serverport)
+        except PermissionError:
+            logger.error(traceback.format_exc())
+            os._exit(errno.EPERM)
+        except KeyboardInterrupt:
+            logger.info('Terminating...')
+            os._exit(0)
+
+    task = threading.Thread(target=server_task, args=(app, serverport), daemon=True)
+    task.start()
 
 
 def load_strategyfsm(filename):
@@ -84,9 +97,9 @@ def main():
         strategyfsm_name, strategyfsm_class = load_strategyfsm(args.file)
 
         logger.info('instantiating livefeed class...')
-        livefeed = RabbitMQLiveBarFeed(args.url, args.symbol, args.symbol,
+        livefeed = RabbitMQLiveBarFeed(args.url, args.symbol, args.queue,
             [Frequency.REALTIME, Frequency.DAY])
-        
+
         logger.info('creating strategy \'{}\'...'.format(strategyfsm_name))
         livestrategy = strategy.LiveStrategy(livefeed, strategyfsm_class)
 
@@ -103,7 +116,7 @@ def main():
         logger.info('terminating...')
         sys.exit(0)
 
-# PYTHONPATH='./' python3 pyalgotrade/apps/strategyd.py -f ./samples/strategy/strategyfsm.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
 
+# PYTHONPATH='./' python3 pyalgotrade/apps/strategyd.py -f ./samples/strategy/strategyfsm.py -s XAUUSD -q xauusd -u "amqp://guest:guest@localhost/%2f"
 if __name__ == '__main__':
     main()

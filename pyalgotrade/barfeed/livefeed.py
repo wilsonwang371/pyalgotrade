@@ -66,7 +66,7 @@ class LiveBarFeed(MultiFrequencyBarFeed):
 
 class RabbitMQLiveBarFeed(LiveBarFeed):
 
-    def __init__(self, server, queue_name, instrument, frequencies,
+    def __init__(self, server, instrument, queue_name, frequencies,
                  maxLen=1000):
         super(RabbitMQLiveBarFeed, self).__init__(instrument, frequencies,
             maxLen)

@@ -94,6 +94,7 @@ def process_rawdata(raw_data):
 
 
 class FX678DataAgentFSMStates(enum.Enum):
+
     INIT = 1
     READY = 2
     RETRY = 3
@@ -102,7 +103,7 @@ class FX678DataAgentFSMStates(enum.Enum):
 
 class FX678DataAgent(StateMachine):
     
-    def __init__(self, url, queue, symbol):
+    def __init__(self, url, symbol, queue):
         super(FX678DataAgent, self).__init__()
         self.__url = url
         self.__symbol = symbol
@@ -188,13 +189,14 @@ class FX678DataAgent(StateMachine):
 
 
 def parse_args():
-    # for testing purpose, I use these options:
-    #  -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
     parser = argparse.ArgumentParser(prog=sys.argv[0],
         description='FX678(汇通财经) data agent.')
     parser.add_argument('-s', '--symbol', dest='symbol',
         required=True,
         help='strategy resource symbol name')
+    parser.add_argument('-q', '--queue', dest='queue',
+        required=True,
+        help='message queue name')
     parser.add_argument('-u', '--url', dest='url',
         required=True,
         help='amqp protocol url')
@@ -206,7 +208,7 @@ def main():
     if args.symbol not in supported_symbols:
         logger.error('Unsupported symbol. Supported symbols are: {}'.format(list(supported_symbols.keys())))
         sys.exit(errno.EINVAL)
-    agent = FX678DataAgent(args.url, args.symbol, args.symbol)
+    agent = FX678DataAgent(args.url, args.symbol, args.queue)
     try:
         while True:
             agent.run()
@@ -215,7 +217,7 @@ def main():
     except Exception:
         logger.error(traceback.format_exc())
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
 
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -q xauusd -u "amqp://guest:guest@localhost/%2f"
 if __name__ == '__main__':
     main()
