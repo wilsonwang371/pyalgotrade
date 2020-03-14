@@ -7,13 +7,14 @@ import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 
+from six.queue import Queue
+
 import coloredlogs
 import pika
 import pyalgotrade.bar as bar
 import pyalgotrade.logger
-from pyalgotrade.barfeed.driver.ibdatadriver import IBDataDriver
 from pyalgotrade.fsm import StateMachine, state
-from pyalgotrade.mq import MQProducer
+from pyalgotrade.mq import MQConsumer, MQProducer
 from pyalgotrade.utils.misc import protected_function, pyGo
 
 coloredlogs.install(level='INFO')
@@ -37,14 +38,32 @@ class TimeSeriesAgent(StateMachine):
         self.__outqueue = outqueue
 
     @state(TimeSeriesAgentFSMState.INIT, True)
+    @protected_function(TimeSeriesAgentFSMState.ERROR)
     def state_init(self):
+        self.__consumer = MQConsumer(self.__url, self.__inqueue)
+        self.__producer = MQProducer(self.__url, self.__outqueue)
+        self.__inbuf = Queue()
+        self.__outbuf = Queue()
+        def in_task():
+            while True:
+                tmp = self.__consumer.fetch_one()
+                self.__inbuf.put(tmp)
+        pyGo(in_task)
+        def out_task():
+            while True:
+                tmp = self.__outbuf.get()
+                self.__producer.put_one(tmp)
+        pyGo(out_task)
         return TimeSeriesAgentFSMState.READY
 
     @state(TimeSeriesAgentFSMState.READY, False)
+    @protected_function(TimeSeriesAgentFSMState.ERROR)
     def state_ready(self):
+        #TODO: fetch inbuf and put outbuf
         return TimeSeriesAgentFSMState.READY
     
     @state(TimeSeriesAgentFSMState.RETRY, False)
+    @protected_function(TimeSeriesAgentFSMState.ERROR)
     def state_retry(self):
         return TimeSeriesAgentFSMState.READY
     
