@@ -24,6 +24,7 @@ logger = pyalgotrade.logger.getLogger(__name__)
 class OHLCData:
 
     def __init__(self, freq):
+        assert freq in [bar.Frequency.DAY, bar.Frequency.HOUR]
         self.__freq = freq
         self.reset()
         self.__buf = Queue()
@@ -34,23 +35,40 @@ class OHLCData:
         self.__count = 0
         self.__volume_val = 0.0
 
+    def empty(self):
+        return self.__buf.empty()
+
+    def get(self, *args, **kwargs):
+        return self.__buf.get(*args, **kwargs)
+
     def add(self, timestamp_val,
         open_val, high_val, low_val, close_val,
         volume_val=0.0):
+        # check if there is a large gap between begin timestamp and end timestamp
+        if self.__begin_ts is not None:
+            tsdiff = timestamp_val - self.__begin_ts
+            if tsdiff >= self.__freq and tsdiff < 2 * self.__freq:
+                tmp = self.generate_olhc()
+                assert tmp is not None
+                tmpts = self.__begin_ts + tsdiff // 2
+                if self.__freq == bar.Frequency.HOUR:
+                    tmpts = dt.datetime.utcfromtimestamp(tmpts).replace(minute=0, second=0, microsecond=0).timestamp()
+                elif self.__freq == bar.Frequency.DAY:
+                    tmpts = dt.datetime.utcfromtimestamp(tmpts).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+                tmp['timestamp'] = tmpts
+                tmp.pop('ts_begin', None)
+                tmp.pop('ts_end', None)
+                self.__buf.put(tmp)
+                self.reset()
+
         if self.__begin_ts is None:
             self.__begin_ts = timestamp_val
         if self.__end_ts is not None and timestamp_val < self.__end_ts:
             logger.info('old data received')
             return
-        
-        # check if there is a large gap between begin timestamp and end timestamp
-        tsdiff = timestamp_val - self.__begin_ts
-        if tsdiff >= self.__freq and tsdiff < 2 * self__freq:
-            #TODO: add more logic
-            pass
+        self.__end_ts = timestamp_val
 
         # initial timestamp checking done
-        self.__end_ts = timestamp_val
         if self.__open_val is None:
             self.__open_val = open_val
         if self.__high_val is None or self.__high_val < high_val:
@@ -94,8 +112,8 @@ class OHLCData:
         return self.__count
 
     def __str__(self):
-        begindate = dt.datetime.fromtimestamp(self.__begin_ts)
-        enddate = dt.datetime.fromtimestamp(self.__end_ts)
+        begindate = dt.datetime.utcfromtimestamp(self.__begin_ts)
+        enddate = dt.datetime.utcfromtimestamp(self.__end_ts)
         return ('<OHLCData BeginTs:[{},{}] EndTs:[{},{}] '
             'Open:{} High:{} Low:{} Close:{} Volume:{} Count:{}>').format(
             self.__begin_ts, begindate,
