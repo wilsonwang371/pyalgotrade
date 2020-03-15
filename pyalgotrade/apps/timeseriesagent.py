@@ -46,22 +46,28 @@ class OHLCData:
         volume_val=0.0):
         # check if there is a large gap between begin timestamp and end timestamp
         if self.__begin_ts is not None:
-            tsdiff = timestamp_val - self.__begin_ts
-            if tsdiff >= self.__freq and tsdiff < 2 * self.__freq:
-                tmp = self.generate_olhc()
-                assert tmp is not None
-                tmpts = self.__begin_ts + tsdiff // 2
-                if self.__freq == bar.Frequency.HOUR:
-                    tmpts = dt.datetime.utcfromtimestamp(tmpts).replace(minute=0,
-                        second=0, microsecond=0).timestamp()
-                elif self.__freq == bar.Frequency.DAY:
-                    tmpts = dt.datetime.utcfromtimestamp(tmpts).replace(hour=0,
-                        minute=0, second=0, microsecond=0).timestamp()
-                tmp['timestamp'] = tmpts
-                tmp.pop('ts_begin', None)
-                tmp.pop('ts_end', None)
-                self.__buf.put(tmp)
-                self.reset()
+            if self.__freq == bar.Frequency.HOUR:
+                cur_hour = dt.datetime.utcfromtimestamp(timestamp_val).replace(minute=0,
+                    second=0, microsecond=0)
+                begin_hour = dt.datetime.utcfromtimestamp(self.__begin_ts).replace(minute=0,
+                    second=0, microsecond=0)
+                if cur_hour > begin_hour:
+                    # use begin hour to compute a new ohlc data
+                    tmpdata = self.generate_olhc()
+                    tmpdata['timestamp'] = begin_hour.timestamp()
+                    self.__buf.put(tmpdata)
+                    self.reset()
+            elif self.__freq == bar.Frequency.DAY:
+                cur_day = dt.datetime.utcfromtimestamp(timestamp_val).replace(hour=0,
+                    minute=0, second=0, microsecond=0)
+                begin_day = dt.datetime.utcfromtimestamp(self.__begin_ts).replace(hour=0,
+                    minute=0, second=0, microsecond=0)
+                if cur_day > begin_day:
+                    # use begin day to compute a new ohlc data
+                    tmpdata = self.generate_olhc()
+                    tmpdata['timestamp'] = begin_day.timestamp()
+                    self.__buf.put(tmpdata)
+                    self.reset()
 
         if self.__begin_ts is None:
             self.__begin_ts = timestamp_val
@@ -137,9 +143,8 @@ class OHLCData:
             'low': self.__low_val,
             'close': self.__close_val,
             'volume': self.__volume_val,
-            'ts_begin': self.__begin_ts,
-            'ts_end': self.__end_ts,
-            'freq': self.__freq
+            'freq': self.__freq,
+            'ticks': self.__count,
         }
 
 
