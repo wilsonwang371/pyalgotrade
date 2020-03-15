@@ -23,8 +23,10 @@ logger = pyalgotrade.logger.getLogger(__name__)
 
 class OHLCData:
 
-    def __init__(self):
+    def __init__(self, freq):
+        self.__freq = freq
         self.reset()
+        self.__buf = Queue()
 
     def reset(self):
         self.__open_val = self.__high_val = self.__low_val = self.__close_val = None
@@ -32,12 +34,22 @@ class OHLCData:
         self.__count = 0
         self.__volume_val = 0.0
 
-    def add(self, timestamp_val, open_val, high_val, low_val, close_val, volume_val=0.0):
+    def add(self, timestamp_val,
+        open_val, high_val, low_val, close_val,
+        volume_val=0.0):
         if self.__begin_ts is None:
             self.__begin_ts = timestamp_val
         if self.__end_ts is not None and timestamp_val < self.__end_ts:
             logger.info('old data received')
             return
+        
+        # check if there is a large gap between begin timestamp and end timestamp
+        tsdiff = timestamp_val - self.__begin_ts
+        if tsdiff >= self.__freq and tsdiff < 2 * self__freq:
+            #TODO: add more logic
+            pass
+
+        # initial timestamp checking done
         self.__end_ts = timestamp_val
         if self.__open_val is None:
             self.__open_val = open_val
@@ -107,6 +119,7 @@ class OHLCData:
             'volume': self.__volume_val,
             'ts_begin': self.__begin_ts,
             'ts_end': self.__end_ts,
+            'freq': self.__freq
         }
 
 
