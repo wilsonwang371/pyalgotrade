@@ -22,38 +22,92 @@ logger = pyalgotrade.logger.getLogger(__name__)
 
 
 class OHLCData:
-    
-    def __init__(self):
-        self.__open = self.__high = self.__low = self.__close = None
-        self.begin_ts = self.end_ts = None
 
-    def add(self, timestamp, value):
-        if self.begin_ts is None:
-            self.begin_ts = timestamp
-        self.end_ts = timestamp
-        if self.__open is None:
-            self.__open = value
-        if self.__high is None or self.__high < value:
-            self.__high = value
-        if self.__low is None or self.__low > value:
-            self.__low = value
-        self.__close = value
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.__open_val = self.__high_val = self.__low_val = self.__close_val = None
+        self.__begin_ts = self.__end_ts = None
+        self.__count = 0
+        self.__volume_val = 0.0
+
+    def add(self, timestamp_val, open_val, high_val, low_val, close_val, volume_val=0.0):
+        if self.__begin_ts is None:
+            self.__begin_ts = timestamp_val
+        if self.__end_ts is not None and timestamp_val < self.__end_ts:
+            logger.info('old data received')
+            return
+        self.__end_ts = timestamp_val
+        if self.__open_val is None:
+            self.__open_val = open_val
+        if self.__high_val is None or self.__high_val < high_val:
+            self.__high_val = high_val
+        if self.__low_val is None or self.__low_val > low_val:
+            self.__low_val = low_val
+        self.__close_val = close_val
+        self.__volume_val += volume_val
+        self.__count += 1
+
+    @property
+    def begints(self):
+        return self.__begin_ts
+
+    @property
+    def endts(self):
+        return self.__end_ts
 
     @property
     def open(self):
-        return self.__open
-    
+        return self.__open_val
+
     @property
     def high(self):
-        return self.__high
-    
+        return self.__high_val
+
     @property
     def low(self):
-        return self.__low
+        return self.__low_val
 
     @property
     def close(self):
-        return self.__close
+        return self.__close_val
+
+    @property
+    def volume(self):
+        return self.__volume_val
+
+    @property
+    def count(self):
+        return self.__count
+
+    def __str__(self):
+        begindate = dt.datetime.fromtimestamp(self.__begin_ts)
+        enddate = dt.datetime.fromtimestamp(self.__end_ts)
+        return ('<OHLCData BeginTs:[{},{}] EndTs:[{},{}] '
+            'Open:{} High:{} Low:{} Close:{} Volume:{} Count:{}>').format(
+            self.__begin_ts, begindate,
+            self.__end_ts, enddate,
+            self.__open_val,
+            self.__high_val,
+            self.__low_val,
+            self.__close_val,
+            self.__volume_val,
+            self.__count)
+
+    def generate_olhc(self):
+        if (self.__open_val is None or self.__high_val is None or
+            self.__low_val is None or self.__close_val is None):
+            return None
+        return {
+            'open': self.__open_val,
+            'high': self.__high_val,
+            'low': self.__low_val,
+            'close': self.__close_val,
+            'volume': self.__volume_val,
+            'ts_begin': self.__begin_ts,
+            'ts_end': self.__end_ts,
+        }
 
 
 class TimeSeriesAgentFSMState(enum.Enum):
@@ -66,11 +120,23 @@ class TimeSeriesAgentFSMState(enum.Enum):
 
 class TimeSeriesAgent(StateMachine):
 
-    def __init__(self, url, inqueue, outqueue):
+    def __init__(self, url, inqueue, outqueue, freqs):
         super(TimeSeriesAgent, self).__init__()
         self.__url = url
         self.__inqueue = inqueue
         self.__outqueue = outqueue
+        self.__freqs = []
+        for i in freqs:
+            if i == 'hour':
+                self.__freqs.append(bar.Frequency.HOUR)
+            elif i == 'day':
+                self.__freqs.append(bar.Frequency.DAY)
+        if len(freqs) == 0:
+            logger.info('no extra data frequency dispatching')
+        elif len(freqs) == 1:
+            logger.info('generating frequency at {}'.format(self.__freqs[0]))
+        else:
+            logger.info('generating frequencies at {}'.format(self.__freqs))
 
     @state(TimeSeriesAgentFSMState.INIT, True)
     @protected_function(TimeSeriesAgentFSMState.ERROR)
@@ -124,12 +190,17 @@ def parse_args():
     parser.add_argument('-u', '--url', dest='url',
         required=True,
         help='amqp protocol url')
+    parser.add_argument('-f','--frequency', action='append',
+        dest='freq', choices=['hour', 'day'], default=[],
+        help='time series frequencies we want to generate')
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-    agent = TimeSeriesAgent(args.url, args.inqueue, args.outqueue)
+    agent = TimeSeriesAgent(args.url,
+        args.inqueue, args.outqueue,
+        args.freq)
     try:
         while True:
             agent.run()
