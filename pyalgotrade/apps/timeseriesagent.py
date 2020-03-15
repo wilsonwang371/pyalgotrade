@@ -52,9 +52,11 @@ class OHLCData:
                 assert tmp is not None
                 tmpts = self.__begin_ts + tsdiff // 2
                 if self.__freq == bar.Frequency.HOUR:
-                    tmpts = dt.datetime.utcfromtimestamp(tmpts).replace(minute=0, second=0, microsecond=0).timestamp()
+                    tmpts = dt.datetime.utcfromtimestamp(tmpts).replace(minute=0,
+                        second=0, microsecond=0).timestamp()
                 elif self.__freq == bar.Frequency.DAY:
-                    tmpts = dt.datetime.utcfromtimestamp(tmpts).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+                    tmpts = dt.datetime.utcfromtimestamp(tmpts).replace(hour=0,
+                        minute=0, second=0, microsecond=0).timestamp()
                 tmp['timestamp'] = tmpts
                 tmp.pop('ts_begin', None)
                 tmp.pop('ts_end', None)
