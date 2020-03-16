@@ -164,6 +164,7 @@ class TimeSeriesAgent(StateMachine):
         self.__inqueue = inqueue
         self.__outqueue = outqueue
         self.__freqs = []
+        self.__timeseries = {}
         for i in freqs:
             if i == 'hour':
                 self.__freqs.append(bar.Frequency.HOUR)
@@ -175,6 +176,8 @@ class TimeSeriesAgent(StateMachine):
             logger.info('generating frequency at {}'.format(self.__freqs[0]))
         else:
             logger.info('generating frequencies at {}'.format(self.__freqs))
+        for i in self.__freqs:
+            self.__timeseries[i] = OHLCData(i)
 
     @state(TimeSeriesAgentFSMState.INIT, True)
     @protected_function(TimeSeriesAgentFSMState.ERROR)
@@ -200,9 +203,15 @@ class TimeSeriesAgent(StateMachine):
     @state(TimeSeriesAgentFSMState.READY, False)
     @protected_function(TimeSeriesAgentFSMState.ERROR)
     def state_ready(self):
-        #TODO: fetch inbuf and put outbuf
         itm = self.__inbuf.get()
-        logger.info(itm)
+        self.__outbuf.put(itm)
+        for i in sorted(self.__timeseries.keys()):
+            ohlcdata = self.__timeseries[i]
+            ohlcdata.add(itm['timestamp'], itm['open'], itm['high'], itm['low'], itm['close'], itm['volume'])
+            while not ohlcdata.empty():
+                newdata = ohlcdata.get()
+                self.__outbuf.put(newdata)
+                logger.info(newdata)
         return TimeSeriesAgentFSMState.READY
     
     @state(TimeSeriesAgentFSMState.RETRY, False)
