@@ -207,7 +207,8 @@ class TimeSeriesAgent(StateMachine):
         self.__outbuf.put(itm)
         for i in sorted(self.__timeseries.keys()):
             ohlcdata = self.__timeseries[i]
-            ohlcdata.add(itm['timestamp'], itm['open'], itm['high'], itm['low'], itm['close'], itm['volume'])
+            ohlcdata.add(itm['timestamp'], itm['open'], itm['high'],
+                itm['low'], itm['close'], itm['volume'])
             while not ohlcdata.empty():
                 newdata = ohlcdata.get()
                 self.__outbuf.put(newdata)
