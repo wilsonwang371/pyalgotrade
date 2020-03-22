@@ -25,7 +25,7 @@ logger = pyalgotrade.logger.getLogger(__name__)
 
 class OHLCData:
 
-    def __init__(self, freq, timezone=pytz.timezone('Etc/GMT+2')):
+    def __init__(self, freq, rt_correction=False, timezone=pytz.timezone('Etc/GMT+2')):
         # Etc/GMT+2 is the ideal timezone for gold price tracking
         assert isinstance(timezone, pytz.tzinfo.BaseTzInfo)
         assert freq in [bar.Frequency.DAY, bar.Frequency.HOUR]
@@ -33,6 +33,8 @@ class OHLCData:
         self.reset()
         self.__buf = Queue()
         self.__tz = timezone
+        self.__rt_correction = rt_correction
+        #TODO: add support for rt_correction
 
     def reset(self):
         self.__open_val = self.__high_val = self.__low_val = self.__close_val = None
@@ -167,7 +169,7 @@ class TimeSeriesAgentFSMState(enum.Enum):
 
 class TimeSeriesAgent(StateMachine):
 
-    def __init__(self, url, inqueue, outqueue, freqs):
+    def __init__(self, url, inqueue, outqueue, freqs, rt_correction):
         super(TimeSeriesAgent, self).__init__()
         self.__url = url
         self.__inqueue = inqueue
@@ -186,7 +188,7 @@ class TimeSeriesAgent(StateMachine):
         else:
             logger.info('generating frequencies at {}'.format(self.__freqs))
         for i in self.__freqs:
-            self.__timeseries[i] = OHLCData(i)
+            self.__timeseries[i] = OHLCData(i, rt_correction)
 
     @state(TimeSeriesAgentFSMState.INIT, True)
     @protected_function(TimeSeriesAgentFSMState.ERROR)
@@ -250,6 +252,10 @@ def parse_args():
     parser.add_argument('-f','--frequency', action='append',
         dest='freq', choices=['hour', 'day'], default=[],
         help='time series frequencies we want to generate')
+    parser.add_argument('-r', '--realtime-correction',
+        dest='rt_correction', action='store_true',
+        default=False,
+        help='realtime data feed correction')
     return parser.parse_args()
 
 
@@ -257,7 +263,7 @@ def main():
     args = parse_args()
     agent = TimeSeriesAgent(args.url,
         args.inqueue, args.outqueue,
-        args.freq)
+        args.freq, args.rt_correction)
     try:
         while True:
             agent.run()

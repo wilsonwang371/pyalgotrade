@@ -88,7 +88,7 @@ def process_rawdata(raw_data):
         data['close'] = float(c)
         data['volume'] = float(v)
         data['freq'] = Frequency.REALTIME
-        data['timestamp'] = int(t)
+        data['timestamp'] = int(t) + 1
         data['source'] = 'fx678'
     return data
 
