@@ -60,7 +60,8 @@ class OHLCData:
                     second=0, microsecond=0)
                 begin_hour = dt.datetime.utcfromtimestamp(self.__begin_ts).replace(minute=0,
                     second=0, microsecond=0)
-                if cur_hour > begin_hour:
+                deltaseconds = (cur_hour - begin_hour).total_seconds()
+                if deltaseconds >= 60 * 60 and deltaseconds < 2 * 60 * 60:
                     # use begin hour to compute a new ohlc data
                     tmpdata = self.generate_olhc()
                     tmpdata['timestamp'] = begin_hour.timestamp()
@@ -72,7 +73,8 @@ class OHLCData:
                     minute=0, second=0, microsecond=0)
                 begin_day = self.__tz.localize(dt.datetime.utcfromtimestamp(self.__begin_ts)).replace(hour=0,
                     minute=0, second=0, microsecond=0)
-                if cur_day > begin_day:
+                deltaseconds = (cur_day - begin_day).total_seconds()
+                if deltaseconds >= 24 * 60 * 60 and deltaseconds < 2 * 24 * 60 * 60:
                     # use begin day to compute a new ohlc data
                     tmpdata = self.generate_olhc()
                     tmpdata['timestamp'] = begin_day.timestamp()
