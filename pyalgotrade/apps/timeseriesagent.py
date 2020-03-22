@@ -13,6 +13,8 @@ import coloredlogs
 import pika
 import pyalgotrade.bar as bar
 import pyalgotrade.logger
+import pytz
+import pytz.tzinfo
 from pyalgotrade.fsm import StateMachine, state
 from pyalgotrade.mq import MQConsumer, MQProducer
 from pyalgotrade.utils.misc import protected_function, pyGo
@@ -23,11 +25,14 @@ logger = pyalgotrade.logger.getLogger(__name__)
 
 class OHLCData:
 
-    def __init__(self, freq):
+    def __init__(self, freq, timezone=pytz.timezone('Etc/GMT+2')):
+        # Etc/GMT+2 is the ideal timezone for gold price tracking
+        assert isinstance(timezone, pytz.tzinfo.BaseTzInfo)
         assert freq in [bar.Frequency.DAY, bar.Frequency.HOUR]
         self.__freq = freq
         self.reset()
         self.__buf = Queue()
+        self.__tz = timezone
 
     def reset(self):
         self.__open_val = self.__high_val = self.__low_val = self.__close_val = None
@@ -45,6 +50,8 @@ class OHLCData:
         open_val, high_val, low_val, close_val,
         volume_val=0.0):
         # check if there is a large gap between begin timestamp and end timestamp
+        logger.info('ohlc: %.2f, %.3f, %.3f, %.3f, %.3f' % (timestamp_val,
+            open_val, high_val, low_val, close_val))
         if self.__begin_ts is not None:
             if self.__freq == bar.Frequency.HOUR:
                 cur_hour = dt.datetime.utcfromtimestamp(timestamp_val).replace(minute=0,
@@ -56,17 +63,19 @@ class OHLCData:
                     tmpdata = self.generate_olhc()
                     tmpdata['timestamp'] = begin_hour.timestamp()
                     self.__buf.put(tmpdata)
+                    logger.info('hour ohlc: {}'.format(tmpdata))
                     self.reset()
             elif self.__freq == bar.Frequency.DAY:
-                cur_day = dt.datetime.utcfromtimestamp(timestamp_val).replace(hour=0,
+                cur_day = self.__tz.localize(dt.datetime.utcfromtimestamp(timestamp_val)).replace(hour=0,
                     minute=0, second=0, microsecond=0)
-                begin_day = dt.datetime.utcfromtimestamp(self.__begin_ts).replace(hour=0,
+                begin_day = self.__tz.localize(dt.datetime.utcfromtimestamp(self.__begin_ts)).replace(hour=0,
                     minute=0, second=0, microsecond=0)
                 if cur_day > begin_day:
                     # use begin day to compute a new ohlc data
                     tmpdata = self.generate_olhc()
                     tmpdata['timestamp'] = begin_day.timestamp()
                     self.__buf.put(tmpdata)
+                    logger.info('day ohlc: {}'.format(tmpdata))
                     self.reset()
 
         if self.__begin_ts is None:
