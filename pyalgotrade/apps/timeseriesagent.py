@@ -48,20 +48,29 @@ class OHLCData:
     def get(self, *args, **kwargs):
         return self.__buf.get(*args, **kwargs)
 
+    def __datetime_from_utcnow(self):
+        return dt.datetime.utcnow().replace(tzinfo=pytz.utc).astimezone(self.__tz)
+
+    def __datetime_from_utctimestamp(self, ts):
+        return dt.datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc).astimezone(self.__tz)
+
     def add(self, timestamp_val,
         open_val, high_val, low_val, close_val,
         volume_val=0.0):
         # check if there is a large gap between begin timestamp and end timestamp
-        logger.info('ohlc: %.2f, %.3f, %.3f, %.3f, %.3f' % (timestamp_val,
-            open_val, high_val, low_val, close_val))
+        logger.info('add %s ohlc: %.2f, %.3f, %.3f, %.3f, %.3f' % (self.__freq,
+            timestamp_val, open_val, high_val, low_val, close_val))
         if self.__begin_ts is not None:
             if self.__freq == bar.Frequency.HOUR:
-                cur_hour = dt.datetime.utcfromtimestamp(timestamp_val).replace(minute=0,
+                cur_hour = self.__datetime_from_utctimestamp(timestamp_val).replace(minute=0,
                     second=0, microsecond=0)
-                begin_hour = dt.datetime.utcfromtimestamp(self.__begin_ts).replace(minute=0,
+                begin_hour = self.__datetime_from_utctimestamp(self.__begin_ts).replace(minute=0,
                     second=0, microsecond=0)
+                utc_hour = self.__datetime_from_utcnow().replace(minute=0, second=0, microsecond=0)
                 deltaseconds = (cur_hour - begin_hour).total_seconds()
-                if deltaseconds >= 60 * 60 and deltaseconds < 2 * 60 * 60:
+                utcdeltaseconds = (utc_hour - begin_hour).total_seconds()
+                if ((deltaseconds >= 60 * 60 and deltaseconds < 2 * 60 * 60) or 
+                    (self.__rt_correction and (utcdeltaseconds > 60 * 60))):
                     # use begin hour to compute a new ohlc data
                     tmpdata = self.generate_olhc()
                     tmpdata['timestamp'] = begin_hour.timestamp()
@@ -69,18 +78,27 @@ class OHLCData:
                     logger.info('hour ohlc: {}'.format(tmpdata))
                     self.reset()
             elif self.__freq == bar.Frequency.DAY:
-                cur_day = self.__tz.localize(dt.datetime.utcfromtimestamp(timestamp_val)).replace(hour=0,
+                cur_day = self.__datetime_from_utctimestamp(timestamp_val).replace(hour=0,
                     minute=0, second=0, microsecond=0)
-                begin_day = self.__tz.localize(dt.datetime.utcfromtimestamp(self.__begin_ts)).replace(hour=0,
+                begin_day = self.__datetime_from_utctimestamp(self.__begin_ts).replace(hour=0,
                     minute=0, second=0, microsecond=0)
+                utc_day = self.__datetime_from_utcnow().replace(hour=0, minute=0, second=0,
+                    microsecond=0)
                 deltaseconds = (cur_day - begin_day).total_seconds()
-                if deltaseconds >= 24 * 60 * 60 and deltaseconds < 2 * 24 * 60 * 60:
+                utcdeltaseconds = (utc_day - begin_day).total_seconds()
+                if ((deltaseconds >= 24 * 60 * 60 and deltaseconds < 2 * 24 * 60 * 60) or
+                    (self.__rt_correction and (utcdeltaseconds > 24 * 60 * 60))):
                     # use begin day to compute a new ohlc data
                     tmpdata = self.generate_olhc()
                     tmpdata['timestamp'] = begin_day.timestamp()
                     self.__buf.put(tmpdata)
                     logger.info('day ohlc: {}'.format(tmpdata))
                     self.reset()
+
+        nowts = self.__datetime_from_utcnow().timestamp()
+        if self.__rt_correction and nowts - timestamp_val > 60:
+            logger.info('skipping obsolete data with timestamp: {}  now: {}'.format(timestamp_val, nowts))
+            return
 
         if self.__begin_ts is None:
             self.__begin_ts = timestamp_val

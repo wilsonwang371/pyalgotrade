@@ -14,6 +14,7 @@ import pandas as pd
 import pika
 import pyalgotrade.bar as bar
 import pyalgotrade.logger
+import pytz
 from pyalgotrade.apps.utils.net import WebRequest
 from pyalgotrade.bar import Frequency
 from pyalgotrade.barfeed.driver.ibdatadriver import IBDataDriver
@@ -25,7 +26,7 @@ coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)
 
 
-SLEEP_TIME = 30
+SLEEP_TIME = 20
 DATA_EXPIRE_SECONDS = 120
 RETRY_SLEEP_TIME = 60
 RETRY_COUNT_MAX = 5
@@ -175,7 +176,7 @@ class FX678DataAgent(StateMachine):
     @state(FX678DataAgentFSMStates.RETRY, False)
     @protected_function(FX678DataAgentFSMStates.ERROR)
     def state_retry(self):
-        logger.info('Retrying in {} seconds...'.format(RETRY_SLEEP_TIME))
+        logger.info('Retry in {} seconds...'.format(RETRY_SLEEP_TIME))
         self.failed_count += 1
         if self.failed_count >= RETRY_COUNT_MAX:
             return FX678DataAgentFSMStates.ERROR
