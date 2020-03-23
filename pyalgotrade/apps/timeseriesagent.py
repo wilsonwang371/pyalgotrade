@@ -22,6 +22,8 @@ from pyalgotrade.utils.misc import protected_function, pyGo
 coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)
 
+DATA_EXPIRE_SECONDS = 120
+
 
 class OHLCData:
 
@@ -66,7 +68,8 @@ class OHLCData:
                     second=0, microsecond=0)
                 begin_hour = self.__datetime_from_utctimestamp(self.__begin_ts).replace(minute=0,
                     second=0, microsecond=0)
-                utc_hour = self.__datetime_from_utcnow().replace(minute=0, second=0, microsecond=0)
+                utc_hour = self.__datetime_from_utcnow().replace(minute=0, second=0,
+                    microsecond=0)
                 deltaseconds = (cur_hour - begin_hour).total_seconds()
                 utcdeltaseconds = (utc_hour - begin_hour).total_seconds()
                 if ((deltaseconds >= 3600 and deltaseconds < 7200) or 
@@ -98,7 +101,8 @@ class OHLCData:
         nowts = self.__datetime_from_utcnow().timestamp()
         #logger.info('timestamp: {}  now: {}'.format(timestamp_val, nowts))
         if self.__rt_correction and nowts - timestamp_val > 60:
-            logger.info('skipping obsolete data with timestamp: {}  now: {}'.format(timestamp_val, nowts))
+            logger.info('skipping obsolete data with timestamp: {}  now: {}'.format(timestamp_val,
+                nowts))
             return
 
         if self.__begin_ts is None:
@@ -216,6 +220,8 @@ class TimeSeriesAgent(StateMachine):
     def state_init(self):
         self.__consumer = MQConsumer(self.__url, self.__inqueue)
         self.__producer = MQProducer(self.__url, self.__outqueue)
+        expire = 1000 * DATA_EXPIRE_SECONDS
+        self.__producer.properties = pika.BasicProperties(expiration=str(expire))
         self.__inbuf = Queue()
         self.__outbuf = Queue()
         def in_task():
