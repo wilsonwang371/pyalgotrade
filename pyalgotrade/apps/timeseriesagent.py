@@ -96,6 +96,7 @@ class OHLCData:
                     self.reset()
 
         nowts = self.__datetime_from_utcnow().timestamp()
+        #logger.info('timestamp: {}  now: {}'.format(timestamp_val, nowts))
         if self.__rt_correction and nowts - timestamp_val > 60:
             logger.info('skipping obsolete data with timestamp: {}  now: {}'.format(timestamp_val, nowts))
             return
