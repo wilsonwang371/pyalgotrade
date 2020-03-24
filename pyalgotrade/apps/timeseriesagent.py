@@ -23,7 +23,8 @@ coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)
 
 DATA_EXPIRE_SECONDS = 120
-
+DAY_BAR_GEN_THRESHOLD = 10
+HOUR_BAR_GEN_THRESHOLD = 60
 
 class OHLCData:
 
@@ -77,8 +78,15 @@ class OHLCData:
                     # use begin hour to compute a new ohlc data
                     tmpdata = self.generate_olhc()
                     tmpdata['timestamp'] = begin_hour.timestamp()
-                    self.__buf.put(tmpdata)
-                    logger.info('hour ohlc: {}'.format(tmpdata))
+                    if self.__count > HOUR_BAR_GEN_THRESHOLD:
+                        # If we dont have this if condition, we may end up
+                        # in two consecutive hour values added one after another
+                        # The root cause is one is for real time and another is
+                        # for non-realtime
+                        self.__buf.put(tmpdata)
+                        logger.info('hour ohlc: {}'.format(tmpdata))
+                    else:
+                        logger.info('abandon one hour value')
                     self.reset()
             elif self.__freq == bar.Frequency.DAY:
                 cur_day = self.__datetime_from_utctimestamp(timestamp_val).replace(hour=0,
@@ -94,8 +102,15 @@ class OHLCData:
                     # use begin day to compute a new ohlc data
                     tmpdata = self.generate_olhc()
                     tmpdata['timestamp'] = begin_day.timestamp()
-                    self.__buf.put(tmpdata)
-                    logger.info('day ohlc: {}'.format(tmpdata))
+                    if self.__count > DAY_BAR_GEN_THRESHOLD:
+                        # If we dont have this if condition, we may end up
+                        # in two consecutive day values added one after another
+                        # The root cause is one is for real time and another is
+                        # for non-realtime
+                        self.__buf.put(tmpdata)
+                        logger.info('day ohlc: {}'.format(tmpdata))
+                    else:
+                        logger.info('abandon one day value')
                     self.reset()
 
         nowts = self.__datetime_from_utcnow().timestamp()
