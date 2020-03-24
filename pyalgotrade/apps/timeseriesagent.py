@@ -78,7 +78,7 @@ class OHLCData:
                     # use begin hour to compute a new ohlc data
                     tmpdata = self.generate_olhc()
                     tmpdata['timestamp'] = begin_hour.timestamp()
-                    if self.__count > HOUR_BAR_GEN_THRESHOLD:
+                    if self.__rt_correction and self.__count > HOUR_BAR_GEN_THRESHOLD:
                         # If we dont have this if condition, we may end up
                         # in two consecutive hour values added one after another
                         # The root cause is one is for real time and another is
@@ -102,7 +102,7 @@ class OHLCData:
                     # use begin day to compute a new ohlc data
                     tmpdata = self.generate_olhc()
                     tmpdata['timestamp'] = begin_day.timestamp()
-                    if self.__count > DAY_BAR_GEN_THRESHOLD:
+                    if self.__rt_correction and self.__count > DAY_BAR_GEN_THRESHOLD:
                         # If we dont have this if condition, we may end up
                         # in two consecutive day values added one after another
                         # The root cause is one is for real time and another is
