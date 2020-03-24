@@ -16,6 +16,7 @@ import requests
 
 logger = pyalgotrade.logger.getLogger(__name__)
 
+DOWNLOAD_TIMEOUT = 30
 
 class WebRequest(object):
 
@@ -56,7 +57,7 @@ class WebRequest(object):
             try:
                 req = request.Request(self._base_url + params,
                                     headers=self._header)
-                response = request.urlopen(req)
+                response = request.urlopen(req, timeout=DOWNLOAD_TIMEOUT)
                 if response.info().get('Content-Encoding') == 'gzip':
                     buf = six.BytesIO(response.read())
                     f = gzip.GzipFile(fileobj=buf)
