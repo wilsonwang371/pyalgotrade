@@ -73,9 +73,10 @@ class Multiplexer(StateMachine):
 
         #TODO: remove this later
         def tmptask():
-            time.sleep(60)
-            for k, v in six.iteritems(self.last_values):
-                logger.info('{}: {}'.format(k, v))
+            while True:
+                time.sleep(60)
+                for k, v in six.iteritems(self.last_values):
+                    logger.info('{}: {}'.format(k, v))
         pyGo(tmptask)
         return MultiplexerFSMState.READY
 
