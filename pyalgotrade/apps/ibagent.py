@@ -40,11 +40,11 @@ supported_symbols = {
 
 class IBDataAgent(StateMachine):
 
-    def __init__(self, url, symbol, queue):
+    def __init__(self, url, symbol, outexchange):
         super(IBDataAgent, self).__init__()
         self.__url = url
         self.__symbol = symbol
-        self.__queue = queue
+        self.__outexchange = outexchange
 
     @state(IBDataAgentFSMState.INIT, True)
     def init(self):
@@ -55,7 +55,7 @@ class IBDataAgent(StateMachine):
         expire = 1000 * DATA_EXPIRE_SECONDS
         expiration_prop = pika.BasicProperties(expiration=str(expire))
         for i in self.__contracts:
-            tmp = MQProducer(self.__url, self.__queue)
+            tmp = MQProducer(self.__url, self.__outexchange)
             tmp.start()
             self.__producer[str(i)] = tmp
             tmp.properties = expiration_prop
@@ -129,9 +129,9 @@ def parse_args():
     parser.add_argument('-s', '--symbol', dest='symbol',
         required=True,
         help='strategy resource symbol name')
-    parser.add_argument('-q', '--queue', dest='queue',
+    parser.add_argument('-o', '--outexchange', dest='outexchange',
         required=True,
-        help='message queue name')
+        help='out message exchange name')
     parser.add_argument('-u', '--url', dest='url',
         required=True,
         help='amqp protocol url')
@@ -143,7 +143,7 @@ def main():
     if args.symbol not in supported_symbols:
         logger.error('Unsupported symbol. Supported symbols are: {}'.format(list(supported_symbols.keys())))
         sys.exit(errno.EINVAL)
-    agent = IBDataAgent(args.url, args.symbol, args.queue)
+    agent = IBDataAgent(args.url, args.symbol, args.outexchange)
     try:
         while True:
             agent.run()
@@ -153,6 +153,6 @@ def main():
         logger.error(traceback.format_exc())
 
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -q xauusd -u "amqp://guest:guest@localhost/%2f"
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -i raw_xauusd -u "amqp://guest:guest@localhost/%2f"
 if __name__ == '__main__':
     main()

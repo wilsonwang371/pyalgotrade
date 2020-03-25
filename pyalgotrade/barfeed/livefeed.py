@@ -66,14 +66,14 @@ class LiveBarFeed(MultiFrequencyBarFeed):
 
 class RabbitMQLiveBarFeed(LiveBarFeed):
 
-    def __init__(self, server, instrument, queue_name, frequencies,
+    def __init__(self, server, instrument, exchange_name, frequencies,
                  maxLen=1000):
         super(RabbitMQLiveBarFeed, self).__init__(instrument, frequencies,
             maxLen)
         self.__instrument = instrument
         self.__server = server
-        self.__queue_name = queue_name
-        self.__consumer = mq.MQConsumer(self.__server, self.__queue_name)
+        self.__exchange_name = exchange_name
+        self.__consumer = mq.MQConsumer(self.__server, self.__exchange_name)
         self.__consumer.start()
 
     def getNextBars(self):

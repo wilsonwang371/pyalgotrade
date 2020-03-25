@@ -104,13 +104,13 @@ class FX678DataAgentFSMStates(enum.Enum):
 
 class FX678DataAgent(StateMachine):
     
-    def __init__(self, url, symbol, queue):
+    def __init__(self, url, symbol, outexchange):
         super(FX678DataAgent, self).__init__()
         self.__url = url
         self.__symbol = symbol
-        self.__queue = queue
+        self.__outexchange = outexchange
         self.failed_count = 0
-        self.producer = MQProducer(self.__url, self.__queue)
+        self.producer = MQProducer(self.__url, self.__outexchange)
         self.producer.start()
 
     @state(FX678DataAgentFSMStates.INIT, True)
@@ -195,9 +195,9 @@ def parse_args():
     parser.add_argument('-s', '--symbol', dest='symbol',
         required=True,
         help='strategy resource symbol name')
-    parser.add_argument('-q', '--queue', dest='queue',
+    parser.add_argument('-o', '--outexchange', dest='outexchange',
         required=True,
-        help='message queue name')
+        help='output message exchange name')
     parser.add_argument('-u', '--url', dest='url',
         required=True,
         help='amqp protocol url')
@@ -209,7 +209,7 @@ def main():
     if args.symbol not in supported_symbols:
         logger.error('Unsupported symbol. Supported symbols are: {}'.format(list(supported_symbols.keys())))
         sys.exit(errno.EINVAL)
-    agent = FX678DataAgent(args.url, args.symbol, args.queue)
+    agent = FX678DataAgent(args.url, args.symbol, args.outexchange)
     try:
         while True:
             agent.run()
@@ -219,6 +219,6 @@ def main():
         logger.error(traceback.format_exc())
 
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -q xauusd -u "amqp://guest:guest@localhost/%2f"
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -o raw_xauusd -u "amqp://guest:guest@localhost/%2f"
 if __name__ == '__main__':
     main()

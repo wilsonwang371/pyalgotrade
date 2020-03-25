@@ -38,9 +38,9 @@ def parse_args():
     parser.add_argument('-s', '--symbol', dest='symbol',
         required=True,
         help='strategy resource symbol name')
-    parser.add_argument('-q', '--queue', dest='queue',
+    parser.add_argument('-i', '--inexchange', dest='inexchange',
         required=True,
-        help='message queue name')
+        help='in message exchange name')
     parser.add_argument('-u', '--url', dest='url',
         required=True,
         help='amqp protocol url')
@@ -97,7 +97,7 @@ def main():
         strategyfsm_name, strategyfsm_class = load_strategyfsm(args.file)
 
         logger.info('instantiating livefeed class...')
-        livefeed = RabbitMQLiveBarFeed(args.url, args.symbol, args.queue,
+        livefeed = RabbitMQLiveBarFeed(args.url, args.symbol, args.inexchange,
             [Frequency.REALTIME, Frequency.DAY])
 
         logger.info('creating strategy \'{}\'...'.format(strategyfsm_name))
@@ -117,6 +117,6 @@ def main():
         sys.exit(0)
 
 
-# PYTHONPATH='./' python3 pyalgotrade/apps/strategyd.py -f ./samples/strategy/strategyfsm.py -s XAUUSD -q xauusd -u "amqp://guest:guest@localhost/%2f"
+# PYTHONPATH='./' python3 pyalgotrade/apps/strategyd.py -f ./samples/strategy/strategyfsm.py -s XAUUSD -i ts_xauusd -u "amqp://guest:guest@localhost/%2f"
 if __name__ == '__main__':
     main()

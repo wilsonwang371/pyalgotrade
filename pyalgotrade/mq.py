@@ -40,12 +40,12 @@ class MQConsumerStates(enum.Enum):
 
 class MQConsumer(StateMachine):
 
-    def __init__(self, server_url, queue_name, *args, **kwargs):
+    def __init__(self, server_url, exchange_name, *args, **kwargs):
         super(MQConsumer, self).__init__(*args, **kwargs)
         self.databuf = []
         self.databuf_cond = threading.Condition()
         self.url = server_url
-        self.queue_name = queue_name
+        self.exchange_name = exchange_name
 
     def start(self):
         ''' execute the statemachine in a separtate thread
@@ -88,7 +88,10 @@ class MQConsumer(StateMachine):
             return MQConsumerStates.DISCONNECTED
         channel = connection.channel()
 
-        channel.queue_declare(queue=self.queue_name) # Declare a queue
+        channel.exchange_declare(exchange=self.exchange_name, exchange_type='fanout')
+        result = channel.queue_declare(queue='', exclusive=True)
+        self.queue_name = result.method.queue
+        channel.queue_bind(exchange=self.exchange_name, queue=self.queue_name)
         self.connection = connection
         self.channel = channel
         return MQConsumerStates.CONNECTED
@@ -157,12 +160,12 @@ class MQProducerStates(enum.Enum):
 
 class MQProducer(StateMachine):
 
-    def __init__(self, server_url, queue_name, *args, **kwargs):
+    def __init__(self, server_url, exchange_name, *args, **kwargs):
         super(MQProducer, self).__init__(*args, **kwargs)
         self.databuf = []
         self.databuf_cond = threading.Condition()
         self.url = server_url
-        self.queue_name = queue_name
+        self.exchange_name = exchange_name
         self.__properties = None
 
     @property
@@ -224,7 +227,7 @@ class MQProducer(StateMachine):
             return MQProducerStates.DISCONNECTED
         channel = connection.channel()
 
-        channel.queue_declare(queue=self.queue_name) # Declare a queue
+        channel.exchange_declare(exchange=self.exchange_name, exchange_type='fanout')
         self.connection = connection
         self.channel = channel
         return MQProducerStates.CONNECTED
@@ -242,7 +245,7 @@ class MQProducer(StateMachine):
             except:
                 logger.error('Cannot serialize data %s' % str(data))
                 continue
-            self.channel.basic_publish(exchange='', routing_key=self.queue_name,
+            self.channel.basic_publish(exchange=self.exchange_name, routing_key='',
                 body=data, properties=self.__properties)
 
         return MQProducerStates.CONNECTED
