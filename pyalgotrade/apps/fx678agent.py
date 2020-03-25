@@ -106,11 +106,12 @@ class FX678DataAgent(StateMachine):
     
     def __init__(self, url, symbol, outexchange):
         super(FX678DataAgent, self).__init__()
-        self.__url = url
         self.__symbol = symbol
         self.__outexchange = outexchange
         self.failed_count = 0
-        self.producer = MQProducer(self.__url, self.__outexchange)
+        params = pika.URLParameters(url)
+        params.socket_timeout = 5
+        self.producer = MQProducer(params, self.__outexchange)
         self.producer.start()
 
     @state(FX678DataAgentFSMStates.INIT, True)
@@ -198,9 +199,19 @@ def parse_args():
     parser.add_argument('-o', '--outexchange', dest='outexchange',
         required=True,
         help='output message exchange name')
+
     parser.add_argument('-u', '--url', dest='url',
         required=True,
         help='amqp protocol url')
+    parser.add_argument('-U', '--user', dest='username',
+        default='guest',
+        help='RabbitMQ username')
+    parser.add_argument('-P', '--pass', dest='password',
+        default='guest',
+        help='RabbitMQ password')
+    parser.add_argument('-H', '--host', dest='host',
+        default='localhost',
+        help='RabbitMQ hostname')
     return parser.parse_args()
 
 

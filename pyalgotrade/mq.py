@@ -40,12 +40,15 @@ class MQConsumerStates(enum.Enum):
 
 class MQConsumer(StateMachine):
 
-    def __init__(self, server_url, exchange_name, *args, **kwargs):
+    def __init__(self, params, exchange_name, *args, **kwargs):
         super(MQConsumer, self).__init__(*args, **kwargs)
         self.databuf = []
         self.databuf_cond = threading.Condition()
-        self.url = server_url
         self.exchange_name = exchange_name
+        #self.url = server_url
+        #self.params = pika.URLParameters(self.url)
+        #self.params.socket_timeout = 5
+        self.params = params
 
     def start(self):
         ''' execute the statemachine in a separtate thread
@@ -78,11 +81,9 @@ class MQConsumer(StateMachine):
     @protected_function(MQConsumerStates.DISCONNECTED)
     def connecting(self):
         logger.debug('CONNECTING')
-        params = pika.URLParameters(self.url)
-        params.socket_timeout = 5
 
         try:
-            connection = pika.BlockingConnection(params) # Connect to CloudAMQP
+            connection = pika.BlockingConnection(self.params) # Connect to CloudAMQP
         except pika.exceptions.AMQPConnectionError:
             logger.error('Failed to connect to AMQP server.')
             return MQConsumerStates.DISCONNECTED
@@ -160,13 +161,17 @@ class MQProducerStates(enum.Enum):
 
 class MQProducer(StateMachine):
 
-    def __init__(self, server_url, exchange_name, *args, **kwargs):
+    def __init__(self, params, exchange_name, *args, **kwargs):
         super(MQProducer, self).__init__(*args, **kwargs)
         self.databuf = []
         self.databuf_cond = threading.Condition()
-        self.url = server_url
         self.exchange_name = exchange_name
         self.__properties = None
+        #self.url = server_url
+        #self.params = pika.URLParameters(self.url)
+        #self.params.socket_timeout = 5
+        self.params = params
+
 
     @property
     def properties(self):
@@ -217,11 +222,8 @@ class MQProducer(StateMachine):
     @protected_function(MQProducerStates.DISCONNECTED)
     def connecting(self):
         logger.debug('CONNECTING')
-        params = pika.URLParameters(self.url)
-        params.socket_timeout = 5
-
         try:
-            connection = pika.BlockingConnection(params) # Connect to CloudAMQP
+            connection = pika.BlockingConnection(self.params) # Connect to CloudAMQP
         except pika.exceptions.AMQPConnectionError:
             logger.error('Failed to connect to AMQP server.')
             return MQProducerStates.DISCONNECTED

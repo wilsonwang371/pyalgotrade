@@ -41,13 +41,23 @@ def parse_args():
     parser.add_argument('-i', '--inexchange', dest='inexchange',
         required=True,
         help='in message exchange name')
-    parser.add_argument('-u', '--url', dest='url',
-        required=True,
-        help='amqp protocol url')
     parser.add_argument('-S', '--web-server', dest='server', action='store_true',
         help='start webserver for strategy state data monitoring')
     parser.add_argument('-p', '--port', dest='port', type=int, default=8000,
         help='web server port, default: 8000')
+    
+    parser.add_argument('-u', '--url', dest='url',
+        required=True,
+        help='amqp protocol url')
+    parser.add_argument('-U', '--user', dest='username',
+        default='guest',
+        help='RabbitMQ username')
+    parser.add_argument('-P', '--pass', dest='password',
+        default='guest',
+        help='RabbitMQ password')
+    parser.add_argument('-H', '--host', dest='host',
+        default='localhost',
+        help='RabbitMQ hostname')
     return parser.parse_args()
 
 

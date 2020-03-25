@@ -241,8 +241,10 @@ class TimeSeriesAgent(StateMachine):
     @state(TimeSeriesAgentFSMState.INIT, True)
     @protected_function(TimeSeriesAgentFSMState.ERROR)
     def state_init(self):
-        self.__consumer = MQConsumer(self.__url, self.__inexchange)
-        self.__producer = MQProducer(self.__url, self.__outexchange)
+        params = pika.URLParameters(self.__url)
+        params.socket_timeout = 5
+        self.__consumer = MQConsumer(params, self.__inexchange)
+        self.__producer = MQProducer(params, self.__outexchange)
         expire = 1000 * DATA_EXPIRE_SECONDS
         self.__producer.properties = pika.BasicProperties(expiration=str(expire))
         self.__inbuf = Queue()
@@ -296,9 +298,6 @@ def parse_args():
     parser.add_argument('-o', '--outexchange', dest='outexchange',
         required=True,
         help='output message exchange name')
-    parser.add_argument('-u', '--url', dest='url',
-        required=True,
-        help='amqp protocol url')
     parser.add_argument('-f','--frequency', action='append',
         dest='freq', choices=['hour', 'day'], default=[],
         help='time series frequencies we want to generate')
@@ -306,6 +305,19 @@ def parse_args():
         dest='rt_correction', action='store_true',
         default=False,
         help='realtime data feed correction')
+
+    parser.add_argument('-u', '--url', dest='url',
+        required=True,
+        help='amqp protocol url')
+    parser.add_argument('-U', '--user', dest='username',
+        default='guest',
+        help='RabbitMQ username')
+    parser.add_argument('-P', '--pass', dest='password',
+        default='guest',
+        help='RabbitMQ password')
+    parser.add_argument('-H', '--host', dest='host',
+        default='localhost',
+        help='RabbitMQ hostname')
     return parser.parse_args()
 
 

@@ -54,8 +54,10 @@ class IBDataAgent(StateMachine):
         ]
         expire = 1000 * DATA_EXPIRE_SECONDS
         expiration_prop = pika.BasicProperties(expiration=str(expire))
+        params = pika.URLParameters(self.__url)
+        params.socket_timeout = 5
         for i in self.__contracts:
-            tmp = MQProducer(self.__url, self.__outexchange)
+            tmp = MQProducer(params, self.__outexchange)
             tmp.start()
             self.__producer[str(i)] = tmp
             tmp.properties = expiration_prop
@@ -132,9 +134,19 @@ def parse_args():
     parser.add_argument('-o', '--outexchange', dest='outexchange',
         required=True,
         help='out message exchange name')
+
     parser.add_argument('-u', '--url', dest='url',
         required=True,
         help='amqp protocol url')
+    parser.add_argument('-U', '--user', dest='username',
+        default='guest',
+        help='RabbitMQ username')
+    parser.add_argument('-P', '--pass', dest='password',
+        default='guest',
+        help='RabbitMQ password')
+    parser.add_argument('-H', '--host', dest='host',
+        default='localhost',
+        help='RabbitMQ hostname')
     return parser.parse_args()
 
 
