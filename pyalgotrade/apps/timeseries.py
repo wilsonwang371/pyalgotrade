@@ -207,7 +207,7 @@ class OHLCData:
         }
 
 
-class TimeSeriesAgentFSMState(enum.Enum):
+class TimeSeriesFSMState(enum.Enum):
 
     INIT = 1
     READY = 2
@@ -215,10 +215,10 @@ class TimeSeriesAgentFSMState(enum.Enum):
     ERROR = -1
 
 
-class TimeSeriesAgent(StateMachine):
+class TimeSeries(StateMachine):
 
     def __init__(self, params, inexchange, outexchange, freqs, rt_correction):
-        super(TimeSeriesAgent, self).__init__()
+        super(TimeSeries, self).__init__()
         self.__params = params
         self.__inexchange = inexchange
         self.__outexchange = outexchange
@@ -238,10 +238,11 @@ class TimeSeriesAgent(StateMachine):
         for i in self.__freqs:
             self.__timeseries[i] = OHLCData(i, rt_correction)
 
-    @state(TimeSeriesAgentFSMState.INIT, True)
-    @protected_function(TimeSeriesAgentFSMState.ERROR)
+    @state(TimeSeriesFSMState.INIT, True)
+    @protected_function(TimeSeriesFSMState.ERROR)
     def state_init(self):
-        self.__consumer = MQConsumer(self.__params, self.__inexchange)
+        self.__consumer = MQConsumer(self.__params, self.__inexchange,
+            queue_name='TimeSeriesConsumerQueue')
         self.__producer = MQProducer(self.__params, self.__outexchange)
         expire = 1000 * DATA_EXPIRE_SECONDS
         self.__producer.properties = pika.BasicProperties(expiration=str(expire))
@@ -259,10 +260,10 @@ class TimeSeriesAgent(StateMachine):
         self.__producer.start()
         pyGo(in_task)
         pyGo(out_task)
-        return TimeSeriesAgentFSMState.READY
+        return TimeSeriesFSMState.READY
 
-    @state(TimeSeriesAgentFSMState.READY, False)
-    @protected_function(TimeSeriesAgentFSMState.ERROR)
+    @state(TimeSeriesFSMState.READY, False)
+    @protected_function(TimeSeriesFSMState.ERROR)
     def state_ready(self):
         itm = self.__inbuf.get()
         self.__outbuf.put(itm)
@@ -274,14 +275,14 @@ class TimeSeriesAgent(StateMachine):
                 newdata = ohlcdata.get()
                 self.__outbuf.put(newdata)
                 logger.info(newdata)
-        return TimeSeriesAgentFSMState.READY
+        return TimeSeriesFSMState.READY
     
-    @state(TimeSeriesAgentFSMState.RETRY, False)
-    @protected_function(TimeSeriesAgentFSMState.ERROR)
+    @state(TimeSeriesFSMState.RETRY, False)
+    @protected_function(TimeSeriesFSMState.ERROR)
     def state_retry(self):
-        return TimeSeriesAgentFSMState.READY
+        return TimeSeriesFSMState.READY
     
-    @state(TimeSeriesAgentFSMState.ERROR, False)
+    @state(TimeSeriesFSMState.ERROR, False)
     def state_error(self):
         logger.error('Fatal error, terminating...')
         sys.exit(errno.EFAULT)
@@ -289,7 +290,7 @@ class TimeSeriesAgent(StateMachine):
 
 def parse_args():
     parser = argparse.ArgumentParser(prog=sys.argv[0],
-        description='IB(Interactive Brokers) data agent.')
+        description='TimeSeries data processing.')
     parser.add_argument('-i', '--inexchange', dest='inexchange',
         required=True,
         help='input message exchange name')
@@ -323,7 +324,7 @@ def main():
     params = pika.ConnectionParameters(host=args.host,
         socket_timeout=5,
         credentials=credentials)
-    agent = TimeSeriesAgent(params,
+    agent = TimeSeries(params,
         args.inexchange, args.outexchange,
         args.freq, args.rt_correction)
     try:
@@ -335,6 +336,6 @@ def main():
         logger.error(traceback.format_exc())
 
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/timeseriesagent.py -i raw_xauusd -o ts_xauusd
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/timeseries.py -i raw_xauusd -o ts_xauusd -f hour -f day -r
 if __name__ == '__main__':
     main()

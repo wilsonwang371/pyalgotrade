@@ -73,7 +73,7 @@ class RabbitMQLiveBarFeed(LiveBarFeed):
             maxLen)
         self.__instrument = instrument
         self.__exchange_name = exchange_name
-        self.__consumer = mq.MQConsumer(params, self.__exchange_name)
+        self.__consumer = mq.MQConsumer(params, self.__exchange_name, queue_name='LiveBarFeedQueue')
         self.__consumer.start()
 
     def getNextBars(self):

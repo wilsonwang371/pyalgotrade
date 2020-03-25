@@ -230,6 +230,7 @@ def main():
         logger.error(traceback.format_exc())
 
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -o raw_xauusd
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/fx678agent.py -s XAUUSD -o raw_xauusd
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/fx678agent.py -s @GC -o raw_gc
 if __name__ == '__main__':
     main()

@@ -40,12 +40,13 @@ class MQConsumerStates(enum.Enum):
 
 class MQConsumer(StateMachine):
 
-    def __init__(self, params, exchange_name, *args, **kwargs):
+    def __init__(self, params, exchange_name, queue_name='', *args, **kwargs):
         super(MQConsumer, self).__init__(*args, **kwargs)
         self.databuf = []
         self.databuf_cond = threading.Condition()
         self.exchange_name = exchange_name
         self.params = params
+        self.queue_name = queue_name
 
     def start(self):
         ''' execute the statemachine in a separtate thread
@@ -87,7 +88,7 @@ class MQConsumer(StateMachine):
         channel = connection.channel()
 
         channel.exchange_declare(exchange=self.exchange_name, exchange_type='fanout')
-        result = channel.queue_declare(queue='', exclusive=True)
+        result = channel.queue_declare(queue=self.queue_name, exclusive=True)
         self.queue_name = result.method.queue
         channel.queue_bind(exchange=self.exchange_name, queue=self.queue_name)
         self.connection = connection

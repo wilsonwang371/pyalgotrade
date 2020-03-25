@@ -55,7 +55,7 @@ class IBDataAgent(StateMachine):
         expire = 1000 * DATA_EXPIRE_SECONDS
         expiration_prop = pika.BasicProperties(expiration=str(expire))
         for i in self.__contracts:
-            tmp = MQProducer(self.params, self.__outexchange)
+            tmp = MQProducer(self.__params, self.__outexchange)
             tmp.start()
             self.__producer[str(i)] = tmp
             tmp.properties = expiration_prop
