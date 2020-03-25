@@ -82,11 +82,3 @@ class RabbitMQLiveBarFeed(LiveBarFeed):
                             row['low'], row['close'], row['volume'], False,
                             row['freq'])
         return bar.Bars({self.__instrument: tmp}, frequecy=tmp.getFrequency())
-
-
-if __name__ == '__main__':
-    QUEUE_NAME = 'XAUUSD'
-    RABBITMQ_AMQP_URL_DEFAULT = 'amqp://guest:guest@localhost/%2f'
-    a = RabbitMQLiveBarFeed(RABBITMQ_AMQP_URL_DEFAULT, QUEUE_NAME, QUEUE_NAME, [Frequency.REALTIME, Frequency.DAY])
-    while True:
-        print(a.getNextBars())

@@ -271,23 +271,3 @@ class MQProducer(StateMachine):
         logger.info('Terminating...')
         raise Exception('exiting...')
 
-
-if __name__ == '__main__':
-    import datetime as dt
-    data = {
-        'timestamp': dt.datetime.now().timestamp(),
-        'open': 1,
-        'high': 1,
-        'low': 1,
-        'close': 1,
-        'volume': 0,
-        'freq': bar.Frequency.REALTIME}
-    QUEUE_NAME = 'xauusd'
-    RABBITMQ_AMQP_URL_DEFAULT = 'amqp://guest:guest@localhost/%2f'
-    p = MQProducer(RABBITMQ_AMQP_URL_DEFAULT, QUEUE_NAME)
-    p.start()
-
-
-    while True:
-        time.sleep(10)
-        p.put_one(data)
