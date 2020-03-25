@@ -104,13 +104,11 @@ class FX678DataAgentFSMStates(enum.Enum):
 
 class FX678DataAgent(StateMachine):
     
-    def __init__(self, url, symbol, outexchange):
+    def __init__(self, params, symbol, outexchange):
         super(FX678DataAgent, self).__init__()
         self.__symbol = symbol
         self.__outexchange = outexchange
         self.failed_count = 0
-        params = pika.URLParameters(url)
-        params.socket_timeout = 5
         self.producer = MQProducer(params, self.__outexchange)
         self.producer.start()
 
@@ -220,7 +218,9 @@ def main():
     if args.symbol not in supported_symbols:
         logger.error('Unsupported symbol. Supported symbols are: {}'.format(list(supported_symbols.keys())))
         sys.exit(errno.EINVAL)
-    agent = FX678DataAgent(args.url, args.symbol, args.outexchange)
+    params = pika.URLParameters(args.url)
+    params.socket_timeout = 5
+    agent = FX678DataAgent(params, args.symbol, args.outexchange)
     try:
         while True:
             agent.run()

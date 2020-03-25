@@ -217,9 +217,9 @@ class TimeSeriesAgentFSMState(enum.Enum):
 
 class TimeSeriesAgent(StateMachine):
 
-    def __init__(self, url, inexchange, outexchange, freqs, rt_correction):
+    def __init__(self, params, inexchange, outexchange, freqs, rt_correction):
         super(TimeSeriesAgent, self).__init__()
-        self.__url = url
+        self.__params = params
         self.__inexchange = inexchange
         self.__outexchange = outexchange
         self.__freqs = []
@@ -241,10 +241,8 @@ class TimeSeriesAgent(StateMachine):
     @state(TimeSeriesAgentFSMState.INIT, True)
     @protected_function(TimeSeriesAgentFSMState.ERROR)
     def state_init(self):
-        params = pika.URLParameters(self.__url)
-        params.socket_timeout = 5
-        self.__consumer = MQConsumer(params, self.__inexchange)
-        self.__producer = MQProducer(params, self.__outexchange)
+        self.__consumer = MQConsumer(self.__params, self.__inexchange)
+        self.__producer = MQProducer(self.__params, self.__outexchange)
         expire = 1000 * DATA_EXPIRE_SECONDS
         self.__producer.properties = pika.BasicProperties(expiration=str(expire))
         self.__inbuf = Queue()
@@ -323,7 +321,9 @@ def parse_args():
 
 def main():
     args = parse_args()
-    agent = TimeSeriesAgent(args.url,
+    params = pika.URLParameters(args.url)
+    params.socket_timeout = 5
+    agent = TimeSeriesAgent(params,
         args.inexchange, args.outexchange,
         args.freq, args.rt_correction)
     try:

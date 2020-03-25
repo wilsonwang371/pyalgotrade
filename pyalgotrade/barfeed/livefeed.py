@@ -67,14 +67,12 @@ class LiveBarFeed(MultiFrequencyBarFeed):
 
 class RabbitMQLiveBarFeed(LiveBarFeed):
 
-    def __init__(self, url, instrument, exchange_name, frequencies,
+    def __init__(self, params, instrument, exchange_name, frequencies,
                  maxLen=1000):
         super(RabbitMQLiveBarFeed, self).__init__(instrument, frequencies,
             maxLen)
         self.__instrument = instrument
         self.__exchange_name = exchange_name
-        params = pika.URLParameters(url)
-        params.socket_timeout = 5
         self.__consumer = mq.MQConsumer(params, self.__exchange_name)
         self.__consumer.start()
 

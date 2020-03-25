@@ -14,6 +14,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 
 import coloredlogs
+import pika
 import pyalgotrade.bar as bar
 import pyalgotrade.logger
 import pyalgotrade.strategy as strategy
@@ -107,7 +108,9 @@ def main():
         strategyfsm_name, strategyfsm_class = load_strategyfsm(args.file)
 
         logger.info('instantiating livefeed class...')
-        livefeed = RabbitMQLiveBarFeed(args.url, args.symbol, args.inexchange,
+        params = pika.URLParameters(args.url)
+        params.socket_timeout = 5
+        livefeed = RabbitMQLiveBarFeed(params, args.symbol, args.inexchange,
             [Frequency.REALTIME, Frequency.DAY])
 
         logger.info('creating strategy \'{}\'...'.format(strategyfsm_name))

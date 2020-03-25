@@ -40,11 +40,11 @@ supported_symbols = {
 
 class IBDataAgent(StateMachine):
 
-    def __init__(self, url, symbol, outexchange):
+    def __init__(self, params, symbol, outexchange):
         super(IBDataAgent, self).__init__()
-        self.__url = url
         self.__symbol = symbol
         self.__outexchange = outexchange
+        self.__params = params
 
     @state(IBDataAgentFSMState.INIT, True)
     def init(self):
@@ -54,10 +54,8 @@ class IBDataAgent(StateMachine):
         ]
         expire = 1000 * DATA_EXPIRE_SECONDS
         expiration_prop = pika.BasicProperties(expiration=str(expire))
-        params = pika.URLParameters(self.__url)
-        params.socket_timeout = 5
         for i in self.__contracts:
-            tmp = MQProducer(params, self.__outexchange)
+            tmp = MQProducer(self.params, self.__outexchange)
             tmp.start()
             self.__producer[str(i)] = tmp
             tmp.properties = expiration_prop
@@ -155,7 +153,9 @@ def main():
     if args.symbol not in supported_symbols:
         logger.error('Unsupported symbol. Supported symbols are: {}'.format(list(supported_symbols.keys())))
         sys.exit(errno.EINVAL)
-    agent = IBDataAgent(args.url, args.symbol, args.outexchange)
+    params = pika.URLParameters(args.url)
+    params.socket_timeout = 5
+    agent = IBDataAgent(params, args.symbol, args.outexchange)
     try:
         while True:
             agent.run()
