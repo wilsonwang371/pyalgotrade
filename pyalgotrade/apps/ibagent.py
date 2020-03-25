@@ -133,18 +133,15 @@ def parse_args():
         required=True,
         help='out message exchange name')
 
-    parser.add_argument('-u', '--url', dest='url',
-        required=True,
-        help='amqp protocol url')
     parser.add_argument('-U', '--user', dest='username',
         default='guest',
-        help='RabbitMQ username')
+        help='RabbitMQ username, default: guest')
     parser.add_argument('-P', '--pass', dest='password',
         default='guest',
-        help='RabbitMQ password')
+        help='RabbitMQ password, default: guest')
     parser.add_argument('-H', '--host', dest='host',
         default='localhost',
-        help='RabbitMQ hostname')
+        help='RabbitMQ hostname, default: localhost')
     return parser.parse_args()
 
 
@@ -153,8 +150,11 @@ def main():
     if args.symbol not in supported_symbols:
         logger.error('Unsupported symbol. Supported symbols are: {}'.format(list(supported_symbols.keys())))
         sys.exit(errno.EINVAL)
-    params = pika.URLParameters(args.url)
-    params.socket_timeout = 5
+
+    credentials = pika.PlainCredentials(args.username, args.password)
+    params = pika.ConnectionParameters(host=args.host,
+        socket_timeout=5,
+        credentials=credentials)
     agent = IBDataAgent(params, args.symbol, args.outexchange)
     try:
         while True:
@@ -165,6 +165,6 @@ def main():
         logger.error(traceback.format_exc())
 
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -i raw_xauusd -u "amqp://guest:guest@localhost/%2f"
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -i raw_xauusd
 if __name__ == '__main__':
     main()

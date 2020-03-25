@@ -45,9 +45,6 @@ class MQConsumer(StateMachine):
         self.databuf = []
         self.databuf_cond = threading.Condition()
         self.exchange_name = exchange_name
-        #self.url = server_url
-        #self.params = pika.URLParameters(self.url)
-        #self.params.socket_timeout = 5
         self.params = params
 
     def start(self):
@@ -167,9 +164,6 @@ class MQProducer(StateMachine):
         self.databuf_cond = threading.Condition()
         self.exchange_name = exchange_name
         self.__properties = None
-        #self.url = server_url
-        #self.params = pika.URLParameters(self.url)
-        #self.params.socket_timeout = 5
         self.params = params
 
 

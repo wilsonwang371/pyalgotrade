@@ -304,25 +304,25 @@ def parse_args():
         default=False,
         help='realtime data feed correction')
 
-    parser.add_argument('-u', '--url', dest='url',
-        required=True,
-        help='amqp protocol url')
     parser.add_argument('-U', '--user', dest='username',
         default='guest',
-        help='RabbitMQ username')
+        help='RabbitMQ username, default: guest')
     parser.add_argument('-P', '--pass', dest='password',
         default='guest',
-        help='RabbitMQ password')
+        help='RabbitMQ password, default: guest')
     parser.add_argument('-H', '--host', dest='host',
         default='localhost',
-        help='RabbitMQ hostname')
+        help='RabbitMQ hostname, default: localhost')
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-    params = pika.URLParameters(args.url)
-    params.socket_timeout = 5
+
+    credentials = pika.PlainCredentials(args.username, args.password)
+    params = pika.ConnectionParameters(host=args.host,
+        socket_timeout=5,
+        credentials=credentials)
     agent = TimeSeriesAgent(params,
         args.inexchange, args.outexchange,
         args.freq, args.rt_correction)
@@ -335,6 +335,6 @@ def main():
         logger.error(traceback.format_exc())
 
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/timeseriesagent.py -i raw_xauusd -o ts_xauusd -u "amqp://guest:guest@localhost/%2f"
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/timeseriesagent.py -i raw_xauusd -o ts_xauusd
 if __name__ == '__main__':
     main()
