@@ -165,6 +165,7 @@ class FX678DataAgent(StateMachine):
         raw_data = jsondata
         data = process_rawdata(raw_data)
 
+        #logger.info('Got data: {}'.format(data))
         #Now we got the data, we need to dispatch it
         self.producer.put_one(data)
 

@@ -183,9 +183,9 @@ class MQProducer(StateMachine):
 
     def put_one(self, data):
         self.databuf_cond.acquire()
-        self.databuf.append(data)
         if not self.databuf:
             self.databuf_cond.notify()
+        self.databuf.append(data)
         self.databuf_cond.release()
 
     def start(self):
