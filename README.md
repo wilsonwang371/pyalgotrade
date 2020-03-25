@@ -59,31 +59,36 @@ OHLC data. In this way, I can avoid significant loss when price made a `yuge' ch
 
 ## Topology
 
-A realtime processing example topology. Here we use IB Agent. We can use other agents as well in the future.
+The following graph shows how the components interconnect to each other.
+
+Data Agent: download data and send data to message queue.
+Data Processing: get data from message queue and produce data and send newly generated data to message queue.
+Strategyd: this is the actual logic for realtime strategy processing.
 
 ```
-+-------------+              +--------------+                   +-------------+
-|             |              |              |                   |             |
-|             |              |              |                   |             |
-| Strategyd   |              |   IB  Agent  +------------------>+  IB Gateway |
-|             |              |              |                   |             |
-|             |              |              +<------------------+             |
-|             |              |              |                   |             |
-|             |              |              |                   |             |
-+-------+-----+              +-------+------+                   +-------------+
-        ^                            |
-        |                            |
-        |                            |
-        |    +-----------------+     |
-        |    |                 |     |
-        |    |                 |     |
-        |    |                 |     |
-        +----+                 +<----+
-             |  RabbitMQ       |
-             |                 |
-             |                 |
-             |                 |
-             +-----------------+
+                                                             
+       +-------+         +------------+        +------------+
+       |       |         |  RabbitMQ  |        |            |
+       | Data  |         |            |        | Data       |
+       | Agent --------------------------------> Processing |
+       |       |         |            |        |            |
+       +-------+         |            |        |            |
+                         |         |------------            |
+                         |         |  |        |            |
+                         |         |  |   ----->            |
+       +-------+         |      ---|-----/     |            |
+       |       |     ----------/   |  |        |            |
+       | Data  -----/    |         |  |        +------------+
+       | Agent |         |         |  |                      
+       |       |         |         |  |        +------------+
+       +------------\    |         |  |        |            |
+                     ----------\   |-----------> Strategyd  |
+       +-------+         |      ---------\     |            |
+       |       |         |            |   ----->            |
+       | Data  |         |            |        |            |
+       | Agent -------------------------------->            |
+       |       |         |            |        |            |
+       +-------+         +------------+        +------------+
 ```
 
 ## Execution
@@ -98,11 +103,13 @@ We need at least 3 components running
 ## Example
 An example for running a strategyd and ibagent is:
 ```bash
+# by default, we assume rabbitmq is running on localhost
+
 # to run ibagent
-python3 pyalgotrade/apps/ibagent.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
+python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -i raw_xauusd
 
 # to run a strategyd
-python3 pyalgotrade/apps/strategyd.py -f ./samples/strategy/strategyfsm.py -s XAUUSD -u "amqp://guest:guest@localhost/%2f"
+python3 pyalgotrade/apps/strategyd.py -f ./samples/strategy/strategyfsm.py -s XAUUSD -i ts_xauusd
 ```
 
 
