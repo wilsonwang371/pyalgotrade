@@ -65,6 +65,7 @@ class MQConsumer(StateMachine):
         while not self.databuf:
             self.databuf_cond.wait()
         result = self.databuf.pop(0)
+        #logger.info('fetch_one {} {}'.format(self.queue_name, result))
         self.databuf_cond.release()
         return result
 
@@ -88,7 +89,8 @@ class MQConsumer(StateMachine):
         channel = connection.channel()
 
         channel.exchange_declare(exchange=self.exchange_name, exchange_type='fanout')
-        result = channel.queue_declare(queue=self.queue_name, exclusive=True)
+        result = channel.queue_declare(queue=self.queue_name,
+            exclusive=True, auto_delete=True)
         self.queue_name = result.method.queue
         channel.queue_bind(exchange=self.exchange_name, queue=self.queue_name)
         self.connection = connection
@@ -181,9 +183,9 @@ class MQProducer(StateMachine):
 
     def put_one(self, data):
         self.databuf_cond.acquire()
+        self.databuf.append(data)
         if not self.databuf:
             self.databuf_cond.notify()
-        self.databuf.append(data)
         self.databuf_cond.release()
 
     def start(self):

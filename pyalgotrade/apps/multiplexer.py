@@ -56,20 +56,19 @@ class Multiplexer(StateMachine):
         expire = 1000 * DATA_EXPIRE_SECONDS
         self.__producer.properties = pika.BasicProperties(expiration=str(expire))
         self.__outbuf = Queue()
+        def in_task(key, itm):
+            while True:
+                tmp = itm.fetch_one()
+                self.__inbuf[key].put(tmp)
+        for key, val in six.iteritems(self.__consumer):
+            self.__consumer[key].start()
+            pyGo(in_task, key, val)
         def out_task():
             while True:
                 tmp = self.__outbuf.get()
                 self.__producer.put_one(tmp)
-        for key, val in six.iteritems(self.__consumer):
-            val.start()
-            def in_task():
-                while True:
-                    tmp = val.fetch_one()
-                    self.__inbuf[key].put(tmp)
-            pyGo(in_task)
         self.__producer.start()
         pyGo(out_task)
-
 
         #TODO: remove this later
         def tmptask():
