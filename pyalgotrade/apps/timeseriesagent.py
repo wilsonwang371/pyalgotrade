@@ -128,12 +128,20 @@ class OHLCData:
         self.__end_ts = timestamp_val
 
         # initial timestamp checking done
-        if self.__open_val is None:
-            self.__open_val = open_val
-        if self.__high_val is None or self.__high_val < high_val:
-            self.__high_val = high_val
-        if self.__low_val is None or self.__low_val > low_val:
-            self.__low_val = low_val
+        if self.__freq == bar.Frequency.DAY:
+            if self.__open_val is None:
+                self.__open_val = open_val
+            if self.__high_val is None or self.__high_val < high_val:
+                self.__high_val = high_val
+            if self.__low_val is None or self.__low_val > low_val:
+                self.__low_val = low_val
+        elif self.__freq == bar.Frequency.HOUR:
+            if self.__open_val is None:
+                self.__open_val = close_val
+            if self.__high_val is None or self.__high_val < close_val:
+                self.__high_val = close_val
+            if self.__low_val is None or self.__low_val > close_val:
+                self.__low_val = close_val
         self.__close_val = close_val
         self.__volume_val += volume_val
         self.__count += 1
