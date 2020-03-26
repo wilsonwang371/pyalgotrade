@@ -35,13 +35,13 @@ def parse_args():
         description='runner program for StrategyFSM class.')
     parser.add_argument('-f', '--strategyfsm-file', dest='file',
         required=True,
-        help='a StrategyFSM python file to load')
+        help='a StrategyFSM python file to load.')
     parser.add_argument('-s', '--symbol', dest='symbol',
         required=True,
-        help='strategy resource symbol name')
+        help='strategy resource symbol name.')
     parser.add_argument('-i', '--inexchange', dest='inexchange',
         required=True,
-        help='in message exchange name')
+        help='in message exchange name.')
     parser.add_argument('-S', '--web-server', dest='server', action='store_true',
         help='start webserver for strategy state data monitoring')
     parser.add_argument('-p', '--port', dest='port', type=int, default=8000,

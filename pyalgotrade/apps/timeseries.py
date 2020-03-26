@@ -61,7 +61,7 @@ class OHLCData:
         open_val, high_val, low_val, close_val,
         volume_val=0.0):
         # check if there is a large gap between begin timestamp and end timestamp
-        logger.info('add %s ohlc: %.2f, %.3f, %.3f, %.3f, %.3f' % (self.__freq,
+        logger.debug('add %s ohlc: %.2f, %.3f, %.3f, %.3f, %.3f' % (self.__freq,
             timestamp_val, open_val, high_val, low_val, close_val))
         if self.__begin_ts is not None:
             if self.__freq == bar.Frequency.HOUR:
@@ -116,7 +116,7 @@ class OHLCData:
         nowts = self.__datetime_from_utcnow().timestamp()
         #logger.info('timestamp: {}  now: {}'.format(timestamp_val, nowts))
         if self.__rt_correction and nowts - timestamp_val > 60:
-            logger.info('skipping obsolete data with timestamp: {}  now: {}'.format(timestamp_val,
+            logger.debug('skipping obsolete data with timestamp: {}  now: {}'.format(timestamp_val,
                 nowts))
             return
 

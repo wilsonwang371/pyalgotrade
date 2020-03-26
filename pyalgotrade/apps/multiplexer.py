@@ -2,6 +2,10 @@ import argparse
 import datetime as dt
 import enum
 import errno
+import importlib.machinery as machinery
+import importlib.util as util
+import inspect
+import os
 import sys
 import time
 import traceback
@@ -17,6 +21,7 @@ import pyalgotrade.logger
 from pyalgotrade.fsm import StateMachine, state
 from pyalgotrade.mq import MQConsumer, MQProducer
 from pyalgotrade.utils.misc import protected_function, pyGo
+from pyalgotrade.apps.muxplugins import MuxPlugin
 
 coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)
@@ -32,14 +37,35 @@ class MultiplexerFSMState(enum.Enum):
     ERROR = -1
 
 
+def load_plugin(filename):
+    if not os.path.isfile(filename):
+        raise FileNotFoundError('no such file: ' + filename)
+    loader = machinery.SourceFileLoader('StrategyFSM', filename)
+    spec = util.spec_from_loader(loader.name, loader)
+    mod = util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    candids = []
+    for i in dir(mod):
+        item = getattr(mod, i)
+        if inspect.isclass(item) and MuxPlugin in item.__bases__:
+            candids.append(i)
+    if len(candids) > 1:
+        raise ValueError('more than one MuxPlugin subclass. {}'.format(str(candids)))
+    if len(candids) == 0:
+        raise ValueError('no MuxPlugin subclass.')
+    return (candids[0], getattr(mod, candids[0]))
+
+
 class Multiplexer(StateMachine):
 
-    def __init__(self, params, inexchange_list, outexchange):
+    def __init__(self, params, inexchange_list, outexchange, plugin):
         super(Multiplexer, self).__init__()
         assert len(inexchange_list) != 0
         self.__params = params
         self.__inexchange_list = inexchange_list
         self.__outexchange = outexchange
+        self.__plugin = plugin
+        self.__skipped_data = 0
 
     @state(MultiplexerFSMState.INIT, True)
     @protected_function(MultiplexerFSMState.ERROR)
@@ -82,11 +108,22 @@ class Multiplexer(StateMachine):
     @state(MultiplexerFSMState.READY, False)
     @protected_function(MultiplexerFSMState.ERROR)
     def state_ready(self):
+        updated = False
         for k, v in six.iteritems(self.__inbuf):
+            skipped = -1
             while not v.empty():
+                skipped += 1
                 self.last_values[k] = v.get()
-        #TODO: implement this later
-        #self.__outbuf.put(itm)
+                updated = True
+            self.__skipped_data += skipped
+        if updated:
+            res = None
+            try:
+                res = self.__plugin.process(self.last_values)
+            except Exception as e:
+                logger.error('Mux plugin exception {}.'.format(str(e)))
+            if res is not None:
+                self.__outbuf.put(res)
         return MultiplexerFSMState.READY
     
     @state(MultiplexerFSMState.RETRY, False)
@@ -110,6 +147,9 @@ def parse_args():
     parser.add_argument('-o', '--outexchange', dest='outexchange',
         required=True,
         help='output message exchange name')
+    parser.add_argument('-f', '--muxplugin-file', dest='file',
+        required=True,
+        help='multiplexer plugin python file to load.')
 
     parser.add_argument('-U', '--user', dest='username',
         default='guest',
@@ -126,12 +166,13 @@ def parse_args():
 def main():
     args = parse_args()
 
+    _, muxplugin_class = load_plugin(args.file)
     credentials = pika.PlainCredentials(args.username, args.password)
     params = pika.ConnectionParameters(host=args.host,
         socket_timeout=5,
         credentials=credentials)
     agent = Multiplexer(params,
-        args.inexchange_list, args.outexchange)
+        args.inexchange_list, args.outexchange, muxplugin_class())
     try:
         while True:
             agent.run()
@@ -141,6 +182,6 @@ def main():
         logger.error(traceback.format_exc())
 
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/multiplexer.py -i raw_xauusd -i raw_gc -o multiplexer_out
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/multiplexer.py -i raw_xauusd -i raw_gc -o processed_mux -f ./samples/muxplugins/mymuxplugin.py
 if __name__ == '__main__':
     main()
