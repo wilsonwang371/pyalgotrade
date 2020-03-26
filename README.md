@@ -41,6 +41,8 @@ PyAlgoTrade is developed and tested using Python 2.7/3.7 and depends on:
  * [ws4py](https://github.com/Lawouach/WebSocket-for-Python) for Bitstamp support.
  * [tornado](http://www.tornadoweb.org/en/stable/) for Bitstamp support.
  * [tweepy](https://github.com/tweepy/tweepy) for Twitter support.
+ * [coloredlogs](https://pypi.org/project/coloredlogs/) for Colored logging support.
+ * [pymongo](https://api.mongodb.com/python/current/) for mongodb data storage support.
  
 You can install PyAlgoTrade using pip like this:
 
