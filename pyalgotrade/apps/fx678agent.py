@@ -222,7 +222,7 @@ def main():
         socket_timeout=5,
         credentials=credentials,
         client_properties={
-            'connection_name': 'fx678agent',
+            'connection_name': 'fx678agent_{}'.format(args.symbol.upper()),
         })
     agent = FX678DataAgent(params, args.symbol, args.outexchange)
     try:
