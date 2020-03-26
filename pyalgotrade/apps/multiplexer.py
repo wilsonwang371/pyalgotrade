@@ -73,10 +73,12 @@ class Multiplexer(StateMachine):
     def state_init(self):
         self.__consumer = {}
         self.last_values = {}
+        self.__inbuf = {}
         for i in self.__inexchange_list:
             self.__consumer[i] = MQConsumer(self.__params, i,
                 queue_name='{}_MultiplexerQueue'.format(i.upper()))
             self.last_values[i] = None
+            self.__inbuf[i] = Queue()
         self.__producer = MQProducer(self.__params, self.__outexchange)
         expire = 1000 * DATA_EXPIRE_SECONDS
         self.__producer.properties = pika.BasicProperties(expiration=str(expire))
@@ -85,7 +87,7 @@ class Multiplexer(StateMachine):
             while True:
                 tmp = itm.fetch_one()
                 self.__update_condition.acquire()
-                self.last_values[key] = tmp
+                self.__inbuf[key].put(tmp)
                 self.__update_condition.notify()
                 self.__update_condition.release()
         for key, val in six.iteritems(self.__consumer):
@@ -103,8 +105,15 @@ class Multiplexer(StateMachine):
     @protected_function(MultiplexerFSMState.ERROR)
     def state_ready(self):
         res = None
+        updated = False
         self.__update_condition.acquire()
-        self.__update_condition.wait()
+        while updated is False:
+            for k, v in six.iteritems(self.__inbuf):
+                while not v.empty():
+                    self.last_values[k] = v.get()
+                    updated = True
+            if not updated:
+                self.__update_condition.wait()
         tmp = self.last_values.copy()
         self.__update_condition.release()
         try:
