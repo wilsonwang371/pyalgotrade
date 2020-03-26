@@ -29,7 +29,7 @@ logger = pyalgotrade.logger.getLogger(__name__)
 SLEEP_TIME = 20
 DATA_EXPIRE_SECONDS = 120
 RETRY_SLEEP_TIME = 60
-RETRY_COUNT_MAX = 5
+RETRY_COUNT_MAX = 30
 
 supported_symbols = {
     'XAUUSD': ['XAU', 'WGJS'],
