@@ -236,7 +236,6 @@ class MQProducer(StateMachine):
     def connected(self):
         logger.debug('CONNECTED')
         self.recover_time = RECOVER_TIME_DEFAULT
-
         while True:
             data = self.__fetch_one()
             try:
@@ -250,7 +249,6 @@ class MQProducer(StateMachine):
             except BrokenPipeError as e:
                 logger.error('Error in basic_publish(): {}'.format(str(e)))
                 return MQProducerStates.DISCONNECTED
-
         return MQProducerStates.CONNECTED
 
     @state(MQProducerStates.DISCONNECTED, False)
