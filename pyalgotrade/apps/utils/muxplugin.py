@@ -7,5 +7,5 @@ import six
 class MuxPlugin:
 
     @abc.abstractmethod
-    def process(self, data):
+    def process(self, key, data):
         raise NotImplementedError('Need to implement MuxPlugin process method')

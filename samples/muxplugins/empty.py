@@ -7,5 +7,5 @@ logger = pyalgotrade.logger.getLogger(__name__)
 
 class EmptyMuxPlugin(MuxPlugin):
 
-    def process(self, data):
+    def process(self, key, data):
         return None

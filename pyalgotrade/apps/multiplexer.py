@@ -66,19 +66,19 @@ class Multiplexer(StateMachine):
         self.__inexchange_list = inexchange_list
         self.__outexchange = outexchange
         self.__plugin = plugin
-        self.__update_condition = threading.Condition()
+        #self.__update_condition = threading.Condition()
 
     @state(MultiplexerFSMState.INIT, True)
     @protected_function(MultiplexerFSMState.ERROR)
     def state_init(self):
         self.__consumer = {}
         self.last_values = {}
-        self.__inbuf = {}
+        self.__inbuf = Queue()
         for i in self.__inexchange_list:
             self.__consumer[i] = MQConsumer(self.__params, i,
                 queue_name='{}_MultiplexerQueue'.format(i.upper()))
             self.last_values[i] = None
-            self.__inbuf[i] = Queue()
+            #self.__inbuf[i] = Queue()
         self.__producer = MQProducer(self.__params, self.__outexchange)
         expire = 1000 * DATA_EXPIRE_SECONDS
         self.__producer.properties = pika.BasicProperties(expiration=str(expire))
@@ -86,10 +86,10 @@ class Multiplexer(StateMachine):
         def in_task(key, itm):
             while True:
                 tmp = itm.fetch_one()
-                self.__update_condition.acquire()
-                self.__inbuf[key].put(tmp)
-                self.__update_condition.notify()
-                self.__update_condition.release()
+                #self.__update_condition.acquire()
+                self.__inbuf.put([key, tmp])
+                #self.__update_condition.notify()
+                #self.__update_condition.release()
         for key, val in six.iteritems(self.__consumer):
             self.__consumer[key].start()
             pyGo(in_task, key, val)
@@ -105,19 +105,21 @@ class Multiplexer(StateMachine):
     @protected_function(MultiplexerFSMState.ERROR)
     def state_ready(self):
         res = None
-        updated = False
-        self.__update_condition.acquire()
-        while updated is False:
-            for k, v in six.iteritems(self.__inbuf):
-                while not v.empty():
-                    self.last_values[k] = v.get()
-                    updated = True
-            if not updated:
-                self.__update_condition.wait()
-        tmp = self.last_values.copy()
-        self.__update_condition.release()
+        #updated = False
+        #self.__update_condition.acquire()
+        #while updated is False:
+        #    for k, v in six.iteritems(self.__inbuf):
+        #        while not v.empty():
+        #            self.last_values[k] = v.get()
+        #            updated = True
+        #    if not updated:
+        #        self.__update_condition.wait()
+        #tmp = self.last_values.copy()
+        #self.__update_condition.release()
         try:
-            res = self.__plugin.process(tmp)
+            while not self.__inbuf.empty():
+                key, itm = self.__inbuf.get()
+                res = self.__plugin.process(key, itm)
         except Exception as e:
             logger.error('Mux plugin exception {}.'.format(str(e)))
         if res is not None:

@@ -7,6 +7,6 @@ logger = pyalgotrade.logger.getLogger(__name__)
 
 class PrintChangeMuxPlugin(MuxPlugin):
 
-    def process(self, data):
+    def process(self, key, data):
         logger.info('Data updated: {}'.format(data))
         return None
