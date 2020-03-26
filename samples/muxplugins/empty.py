@@ -1,6 +1,6 @@
 import coloredlogs
 import pyalgotrade.logger
-from pyalgotrade.apps.muxplugins import MuxPlugin
+from pyalgotrade.apps.utils.muxplugin import MuxPlugin
 
 coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)

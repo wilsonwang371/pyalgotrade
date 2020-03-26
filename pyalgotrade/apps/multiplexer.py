@@ -21,7 +21,7 @@ import pyalgotrade.logger
 from pyalgotrade.fsm import StateMachine, state
 from pyalgotrade.mq import MQConsumer, MQProducer
 from pyalgotrade.utils.misc import protected_function, pyGo
-from pyalgotrade.apps.muxplugins import MuxPlugin
+from pyalgotrade.apps.utils.muxplugin import MuxPlugin
 
 coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)
@@ -95,14 +95,6 @@ class Multiplexer(StateMachine):
                 self.__producer.put_one(tmp)
         self.__producer.start()
         pyGo(out_task)
-
-        #TODO: remove this later
-        def tmptask():
-            while True:
-                time.sleep(60)
-                for k, v in six.iteritems(self.last_values):
-                    logger.info('{}: {}'.format(k, v))
-        pyGo(tmptask)
         return MultiplexerFSMState.READY
 
     @state(MultiplexerFSMState.READY, False)
