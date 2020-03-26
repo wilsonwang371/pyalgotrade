@@ -244,8 +244,12 @@ class MQProducer(StateMachine):
             except:
                 logger.error('Cannot serialize data %s' % str(data))
                 continue
-            self.channel.basic_publish(exchange=self.exchange_name, routing_key='',
-                body=data, properties=self.__properties)
+            try:
+                self.channel.basic_publish(exchange=self.exchange_name, routing_key='',
+                    body=data, properties=self.__properties)
+            except BrokenPipeError as e:
+                logger.error('Error in basic_publish(): {}'.format(str(e)))
+                return MQProducerStates.DISCONNECTED
 
         return MQProducerStates.CONNECTED
 
