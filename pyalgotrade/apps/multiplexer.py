@@ -105,11 +105,12 @@ class Multiplexer(StateMachine):
         res = None
         self.__update_condition.acquire()
         self.__update_condition.wait()
+        tmp = self.last_values.copy()
+        self.__update_condition.release()
         try:
-            res = self.__plugin.process(self.last_values)
+            res = self.__plugin.process(tmp)
         except Exception as e:
             logger.error('Mux plugin exception {}.'.format(str(e)))
-        self.__update_condition.release()
         if res is not None:
             self.__outbuf.put(res)
         return MultiplexerFSMState.READY
