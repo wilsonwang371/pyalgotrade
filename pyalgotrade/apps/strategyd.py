@@ -108,7 +108,10 @@ def main():
         credentials = pika.PlainCredentials(args.username, args.password)
         params = pika.ConnectionParameters(host=args.host,
             socket_timeout=5,
-            credentials=credentials)
+            credentials=credentials,
+            client_properties={
+                'connection_name': 'strategyd',
+            })
         livefeed = RabbitMQLiveBarFeed(params, args.symbol, args.inexchange,
             [Frequency.REALTIME, Frequency.DAY])
 

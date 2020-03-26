@@ -7,6 +7,7 @@ import importlib.util as util
 import inspect
 import os
 import sys
+import threading
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
@@ -18,10 +19,10 @@ import coloredlogs
 import pika
 import pyalgotrade.bar as bar
 import pyalgotrade.logger
+from pyalgotrade.apps.utils.muxplugin import MuxPlugin
 from pyalgotrade.fsm import StateMachine, state
 from pyalgotrade.mq import MQConsumer, MQProducer
 from pyalgotrade.utils.misc import protected_function, pyGo
-from pyalgotrade.apps.utils.muxplugin import MuxPlugin
 
 coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)
@@ -65,18 +66,16 @@ class Multiplexer(StateMachine):
         self.__inexchange_list = inexchange_list
         self.__outexchange = outexchange
         self.__plugin = plugin
-        self.__skipped_data = 0
+        self.__update_condition = threading.Condition()
 
     @state(MultiplexerFSMState.INIT, True)
     @protected_function(MultiplexerFSMState.ERROR)
     def state_init(self):
-        self.__inbuf = {}
         self.__consumer = {}
         self.last_values = {}
         for i in self.__inexchange_list:
             self.__consumer[i] = MQConsumer(self.__params, i,
                 queue_name='{}_MultiplexerQueue'.format(i.upper()))
-            self.__inbuf[i] = Queue()
             self.last_values[i] = None
         self.__producer = MQProducer(self.__params, self.__outexchange)
         expire = 1000 * DATA_EXPIRE_SECONDS
@@ -85,7 +84,10 @@ class Multiplexer(StateMachine):
         def in_task(key, itm):
             while True:
                 tmp = itm.fetch_one()
-                self.__inbuf[key].put(tmp)
+                self.__update_condition.acquire()
+                self.last_values[key] = tmp
+                self.__update_condition.notify()
+                self.__update_condition.release()
         for key, val in six.iteritems(self.__consumer):
             self.__consumer[key].start()
             pyGo(in_task, key, val)
@@ -100,22 +102,16 @@ class Multiplexer(StateMachine):
     @state(MultiplexerFSMState.READY, False)
     @protected_function(MultiplexerFSMState.ERROR)
     def state_ready(self):
-        updated = False
-        for k, v in six.iteritems(self.__inbuf):
-            skipped = -1
-            while not v.empty():
-                skipped += 1
-                self.last_values[k] = v.get()
-                updated = True
-            self.__skipped_data += skipped
-        if updated:
-            res = None
-            try:
-                res = self.__plugin.process(self.last_values)
-            except Exception as e:
-                logger.error('Mux plugin exception {}.'.format(str(e)))
-            if res is not None:
-                self.__outbuf.put(res)
+        res = None
+        self.__update_condition.acquire()
+        self.__update_condition.wait()
+        try:
+            res = self.__plugin.process(self.last_values)
+        except Exception as e:
+            logger.error('Mux plugin exception {}.'.format(str(e)))
+        self.__update_condition.release()
+        if res is not None:
+            self.__outbuf.put(res)
         return MultiplexerFSMState.READY
     
     @state(MultiplexerFSMState.RETRY, False)
@@ -162,7 +158,10 @@ def main():
     credentials = pika.PlainCredentials(args.username, args.password)
     params = pika.ConnectionParameters(host=args.host,
         socket_timeout=5,
-        credentials=credentials)
+        credentials=credentials,
+        client_properties={
+            'connection_name': 'multiplexer',
+        })
     agent = Multiplexer(params,
         args.inexchange_list, args.outexchange, muxplugin_class())
     try:

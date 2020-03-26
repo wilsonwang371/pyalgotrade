@@ -154,7 +154,10 @@ def main():
     credentials = pika.PlainCredentials(args.username, args.password)
     params = pika.ConnectionParameters(host=args.host,
         socket_timeout=5,
-        credentials=credentials)
+        credentials=credentials,
+        client_properties={
+            'connection_name': 'ibagent',
+        })
     agent = IBDataAgent(params, args.symbol, args.outexchange)
     try:
         while True:
