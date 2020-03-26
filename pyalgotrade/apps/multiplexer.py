@@ -6,6 +6,7 @@ import importlib.machinery as machinery
 import importlib.util as util
 import inspect
 import os
+import shlex
 import sys
 import threading
 import time
@@ -66,7 +67,6 @@ class Multiplexer(StateMachine):
         self.__inexchange_list = inexchange_list
         self.__outexchange = outexchange
         self.__plugin = plugin
-        #self.__update_condition = threading.Condition()
 
     @state(MultiplexerFSMState.INIT, True)
     @protected_function(MultiplexerFSMState.ERROR)
@@ -78,7 +78,6 @@ class Multiplexer(StateMachine):
             self.__consumer[i] = MQConsumer(self.__params, i,
                 queue_name='{}_MultiplexerQueue'.format(i.upper()))
             self.last_values[i] = None
-            #self.__inbuf[i] = Queue()
         self.__producer = MQProducer(self.__params, self.__outexchange)
         expire = 1000 * DATA_EXPIRE_SECONDS
         self.__producer.properties = pika.BasicProperties(expiration=str(expire))
@@ -86,10 +85,7 @@ class Multiplexer(StateMachine):
         def in_task(key, itm):
             while True:
                 tmp = itm.fetch_one()
-                #self.__update_condition.acquire()
                 self.__inbuf.put([key, tmp])
-                #self.__update_condition.notify()
-                #self.__update_condition.release()
         for key, val in six.iteritems(self.__consumer):
             self.__consumer[key].start()
             pyGo(in_task, key, val)
@@ -105,17 +101,6 @@ class Multiplexer(StateMachine):
     @protected_function(MultiplexerFSMState.ERROR)
     def state_ready(self):
         res = None
-        #updated = False
-        #self.__update_condition.acquire()
-        #while updated is False:
-        #    for k, v in six.iteritems(self.__inbuf):
-        #        while not v.empty():
-        #            self.last_values[k] = v.get()
-        #            updated = True
-        #    if not updated:
-        #        self.__update_condition.wait()
-        #tmp = self.last_values.copy()
-        #self.__update_condition.release()
         try:
             while not self.__inbuf.empty():
                 key, itm = self.__inbuf.get()
@@ -150,6 +135,9 @@ def parse_args():
     parser.add_argument('-f', '--muxplugin-file', dest='file',
         required=True,
         help='multiplexer plugin python file to load.')
+    parser.add_argument('-a', '--muxplugin-args', dest='pluginargs',
+        required=False, default='',
+        help='multiplexer plugin initialization arguments.')
 
     parser.add_argument('-U', '--user', dest='username',
         default='guest',
@@ -165,6 +153,9 @@ def parse_args():
 
 def main():
     args = parse_args()
+    pluginargs = shlex.shlex(args.pluginargs, posix=True, punctuation_chars=True)
+    pluginargs.whitespace_split = True
+    pluginargs = list(pluginargs)
 
     _, muxplugin_class = load_plugin(args.file)
     credentials = pika.PlainCredentials(args.username, args.password)
@@ -175,7 +166,8 @@ def main():
             'connection_name': 'multiplexer',
         })
     agent = Multiplexer(params,
-        args.inexchange_list, args.outexchange, muxplugin_class())
+        args.inexchange_list, args.outexchange,
+        muxplugin_class(*pluginargs))
     try:
         while True:
             agent.run()

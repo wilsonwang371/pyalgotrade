@@ -11,7 +11,7 @@ DIFF_THRESHOLD = 2.0
 
 class PrintChangeMuxPlugin(MuxPlugin):
 
-    def __init__(self):
+    def __init__(self, *args):
         self.lastdiff = None
         self.values = {}
 

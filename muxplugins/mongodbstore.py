@@ -10,7 +10,7 @@ logger = pyalgotrade.logger.getLogger(__name__)
 
 class MongoDBMuxPlugin(MuxPlugin):
 
-    def __init__(self):
+    def __init__(self, *args):
         pass
 
     def process(self, key, data):
