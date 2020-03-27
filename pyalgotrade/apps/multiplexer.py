@@ -11,6 +11,7 @@ import sys
 import threading
 import time
 import traceback
+import uuid
 from concurrent.futures import ThreadPoolExecutor, wait
 
 import six
@@ -20,6 +21,7 @@ import coloredlogs
 import pika
 import pyalgotrade.bar as bar
 import pyalgotrade.logger
+import pymongo.errors
 from pyalgotrade.apps.utils.muxplugin import MuxPlugin
 from pyalgotrade.fsm import StateMachine, state
 from pyalgotrade.mq import MQConsumer, MQProducer
@@ -76,7 +78,7 @@ class Multiplexer(StateMachine):
         self.__inbuf = Queue()
         for i in self.__inexchange_list:
             self.__consumer[i] = MQConsumer(self.__params, i,
-                queue_name='{}_MultiplexerQueue'.format(i.upper()))
+                queue_name='{}_mux_{}'.format(i.upper(), uuid.uuid4()))
             self.last_values[i] = None
         def in_task(key, itm):
             while True:
@@ -172,14 +174,16 @@ def main():
         client_properties={
             'connection_name': 'multiplexer',
         })
-    agent = Multiplexer(params,
-        args.inexchange_list, args.outexchange,
-        muxplugin_class(*pluginargs))
     try:
+        agent = Multiplexer(params,
+            args.inexchange_list, args.outexchange,
+            muxplugin_class(*pluginargs))
         while True:
             agent.run()
     except KeyboardInterrupt:
         logger.info('Terminating...')
+    except pymongo.errors.ServerSelectionTimeoutError as e:
+        logger.error('Failed to connect to MongoDB server. {}'.format(str(e)))
     except Exception:
         logger.error(traceback.format_exc())
 

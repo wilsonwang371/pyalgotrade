@@ -6,6 +6,7 @@ import coloredlogs
 import pyalgotrade.logger
 import pymongo as pm
 from pyalgotrade.apps.utils.muxplugin import MuxPlugin
+from pyalgotrade.utils.misc import protected_function
 
 coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)
@@ -15,9 +16,10 @@ logger = pyalgotrade.logger.getLogger(__name__)
 class MongoDBMuxPlugin(MuxPlugin):
 
     def __init__(self, *inargs):
+        logger.info('Initializing MongoDB plugin...')
         parser = argparse.ArgumentParser(prog=self.__class__.__name__,
             description='Multiplexer for multiple input data processing.')
-        parser.add_argument('-h', '--host', dest='host', default='localhost',
+        parser.add_argument('-H', '--host', dest='host', default='localhost',
             help='MongoDB host')
         parser.add_argument('-p', '--port', dest='port', default=27017,
             help='MongoDB port')
@@ -27,7 +29,9 @@ class MongoDBMuxPlugin(MuxPlugin):
         args = parser.parse_args(inargs)
         self.client = pm.MongoClient(args.host, args.port)
         self.db = self.client[args.dbname]
+        logger.info('collections: {}'.format(self.db.list_collection_names()))
 
+    @protected_function(None)
     def process(self, key, data):
         assert 'symbol' in data
         assert 'timestamp' in data
@@ -50,4 +54,5 @@ class MongoDBMuxPlugin(MuxPlugin):
             'source': data['source'],
         }
         result = collection.insert_one(one_record)
+        logger.info('Data inserted with id: {}'.format(result.inserted_id))
 
