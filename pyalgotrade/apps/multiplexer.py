@@ -78,10 +78,6 @@ class Multiplexer(StateMachine):
             self.__consumer[i] = MQConsumer(self.__params, i,
                 queue_name='{}_MultiplexerQueue'.format(i.upper()))
             self.last_values[i] = None
-        self.__producer = MQProducer(self.__params, self.__outexchange)
-        expire = 1000 * DATA_EXPIRE_SECONDS
-        self.__producer.properties = pika.BasicProperties(expiration=str(expire))
-        self.__outbuf = Queue()
         def in_task(key, itm):
             while True:
                 tmp = itm.fetch_one()
@@ -89,6 +85,15 @@ class Multiplexer(StateMachine):
         for key, val in six.iteritems(self.__consumer):
             self.__consumer[key].start()
             pyGo(in_task, key, val)
+        
+        if self.__outexchange is None:
+            self.__producer = None
+            self.__outbuf = None
+            return MultiplexerFSMState.READY
+        self.__producer = MQProducer(self.__params, self.__outexchange)
+        expire = 1000 * DATA_EXPIRE_SECONDS
+        self.__producer.properties = pika.BasicProperties(expiration=str(expire))
+        self.__outbuf = Queue()
         def out_task():
             while True:
                 tmp = self.__outbuf.get()
@@ -102,12 +107,11 @@ class Multiplexer(StateMachine):
     def state_ready(self):
         res = None
         try:
-            while not self.__inbuf.empty():
-                key, itm = self.__inbuf.get()
-                res = self.__plugin.process(key, itm)
+            key, itm = self.__inbuf.get()
+            res = self.__plugin.process(key, itm)
         except Exception as e:
             logger.error('Mux plugin exception {}.'.format(str(e)))
-        if res is not None:
+        if res is not None and self.__outbuf is not None:
             self.__outbuf.put(res)
         return MultiplexerFSMState.READY
     
@@ -130,13 +134,13 @@ def parse_args():
         help=('input message exchange names, you can specify multiple '
             'inputs by using this option multiple times.'))
     parser.add_argument('-o', '--outexchange', dest='outexchange',
-        required=True,
+        default=None,
         help='output message exchange name')
     parser.add_argument('-f', '--muxplugin-file', dest='file',
         required=True,
         help='multiplexer plugin python file to load.')
     parser.add_argument('-a', '--muxplugin-args', dest='pluginargs',
-        required=False, default='',
+        default=None,
         help='multiplexer plugin initialization arguments.')
 
     parser.add_argument('-U', '--user', dest='username',
@@ -153,9 +157,12 @@ def parse_args():
 
 def main():
     args = parse_args()
-    pluginargs = shlex.shlex(args.pluginargs, posix=True, punctuation_chars=True)
-    pluginargs.whitespace_split = True
-    pluginargs = list(pluginargs)
+    if args.pluginargs is not None:
+        tokens = shlex.shlex(args.pluginargs, posix=True, punctuation_chars=True)
+        tokens.whitespace_split = True
+        pluginargs = list(tokens)
+    else:
+        pluginargs = []
 
     _, muxplugin_class = load_plugin(args.file)
     credentials = pika.PlainCredentials(args.username, args.password)
