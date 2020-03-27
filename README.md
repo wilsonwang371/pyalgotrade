@@ -64,9 +64,12 @@ OHLC data. In this way, I can avoid significant loss when price made a `yuge' ch
 
 The following graph shows how the components interconnect to each other.
 
-Data Agent: download data and send data to message queue.
-Data Processing: get data from message queue and produce data and send newly generated data to message queue.
-Strategyd: this is the actual logic for realtime strategy processing.
+### Key components
+
+*  Task: a normal task which can generate data and send to rabbitmq. (Retiring and we are going to convert them to Plugin task plugins)
+*  Plugin task: plugin task can load a plugin to either process incoming data or generate data or both.
+*  Strategyd: read incoming data and send it to a live strategy state machine.
+
 
 ```
                                                              
@@ -105,7 +108,7 @@ We need at least 3 components running
 
 
 ## Example
-An example for running a strategyd and ibagent is:
+An example setup
 ```bash
 # by default, we assume rabbitmq is running on localhost
 
@@ -121,7 +124,8 @@ python3 ./pyalgotrade/apps/plugintask.py -i raw_xauusd -i raw_gc -o cooked_diff 
 # a task for generating different frequency data
 python3 ./pyalgotrade/apps/timeseries.py -i raw_xauusd -o ts_xauusd -f hour -f day -r
 
-# if you have mongodb running on localhost:
+# if you have mongodb running on localhost
+# run a plugin task to save all spot gold and futures gold data to mongodb
 python3 ./pyalgotrade/apps/plugintask.py -i raw_xauusd -i raw_gc -f ./plugins/mongodbstore.py -a='-H localhost'
 ```
 
