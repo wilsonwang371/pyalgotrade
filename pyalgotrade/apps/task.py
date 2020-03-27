@@ -33,7 +33,7 @@ logger = pyalgotrade.logger.getLogger(__name__)
 DATA_EXPIRE_SECONDS = 120
 
 
-class PluginTaskFSMState(enum.Enum):
+class TaskFSMState(enum.Enum):
 
     INIT = 1
     READY = 2
@@ -54,30 +54,30 @@ def load_plugin(filename):
         if inspect.isclass(item) and Plugin in item.__bases__:
             candids.append(i)
     if len(candids) > 1:
-        raise ValueError('more than one Plugin subclass. {}'.format(str(candids)))
+        raise ValueError('more than one plugin subclass. {}'.format(str(candids)))
     if len(candids) == 0:
-        raise ValueError('no Plugin subclass.')
+        raise ValueError('no plugin subclass.')
     return (candids[0], getattr(mod, candids[0]))
 
 
-class PluginTask(StateMachine):
+class Task(StateMachine):
 
     def __init__(self, params, inexchange_list, outexchange_list, plugin):
-        super(PluginTask, self).__init__()
+        super(Task, self).__init__()
         assert len(inexchange_list) != 0
         self.__params = params
         self.__inexchange_list = inexchange_list
         self.__outexchange_list = outexchange_list
         self.__plugin = plugin
 
-    @state(PluginTaskFSMState.INIT, True)
-    @protected_function(PluginTaskFSMState.ERROR)
+    @state(TaskFSMState.INIT, True)
+    @protected_function(TaskFSMState.ERROR)
     def state_init(self):
         self.__consumer = {}
         self.__inbuf = Queue()
         for i in self.__inexchange_list:
             self.__consumer[i] = MQConsumer(self.__params, i,
-                queue_name='{}_plugintask_{}'.format(i.upper(), uuid.uuid4()))
+                queue_name='{}_Task_{}'.format(i.upper(), uuid.uuid4()))
         def in_task(key, itm):
             while True:
                 tmp = itm.fetch_one()
@@ -89,7 +89,7 @@ class PluginTask(StateMachine):
         if self.__outexchange_list is None:
             self.__producer = None
             self.__outbuf = None
-            return PluginTaskFSMState.READY
+            return TaskFSMState.READY
         self.__producer = {}
         for i in self.__outexchange_list:
             self.__producer[i] = MQProducer(self.__params, i)
@@ -112,10 +112,10 @@ class PluginTask(StateMachine):
         for key, val in six.iteritems(self.__producer):
             self.__producer[key].start()
         pyGo(out_task)
-        return PluginTaskFSMState.READY
+        return TaskFSMState.READY
 
-    @state(PluginTaskFSMState.READY, False)
-    @protected_function(PluginTaskFSMState.ERROR)
+    @state(TaskFSMState.READY, False)
+    @protected_function(TaskFSMState.ERROR)
     def state_ready(self):
         res = None
         try:
@@ -123,17 +123,17 @@ class PluginTask(StateMachine):
             res = self.__plugin.process(key, itm)
         except Exception as e:
             logger.warning('Plugin exception {}.'.format(str(e)))
-            return PluginTaskFSMState.READY
+            return TaskFSMState.READY
         if res is not None and self.__outbuf is not None:
             self.__outbuf.put(res)
-        return PluginTaskFSMState.READY
+        return TaskFSMState.READY
     
-    @state(PluginTaskFSMState.RETRY, False)
-    @protected_function(PluginTaskFSMState.ERROR)
+    @state(TaskFSMState.RETRY, False)
+    @protected_function(TaskFSMState.ERROR)
     def state_retry(self):
-        return PluginTaskFSMState.READY
+        return TaskFSMState.READY
     
-    @state(PluginTaskFSMState.ERROR, False)
+    @state(TaskFSMState.ERROR, False)
     def state_error(self):
         logger.error('Fatal error, terminating...')
         sys.exit(errno.EFAULT)
@@ -141,7 +141,7 @@ class PluginTask(StateMachine):
 
 def parse_args():
     parser = argparse.ArgumentParser(prog=sys.argv[0],
-        description='PluginTask for multiple input data processing.')
+        description='Task for loading a plugin with multiple input & output data processing.')
     parser.add_argument('-i', '--inexchange', dest='inexchange_list',
         action='append', default=[],
         help=('input message exchange names, you can specify multiple '
@@ -152,10 +152,10 @@ def parse_args():
             'outputs by using this option multiple times.'))
     parser.add_argument('-f', '--plugin-file', dest='file',
         required=True,
-        help='PluginTask plugin python file to load.')
+        help='Task plugin python file to load.')
     parser.add_argument('-a', '--plugin-args', dest='pluginargs',
         default=None,
-        help='PluginTask plugin initialization arguments.')
+        help='Task plugin initialization arguments.')
 
     parser.add_argument('-U', '--user', dest='username',
         default='guest',
@@ -184,13 +184,13 @@ def main():
         socket_timeout=5,
         credentials=credentials,
         client_properties={
-            'connection_name': 'PluginTask',
+            'connection_name': 'Task',
         })
     try:
         plugin_ins = plugin_class(*pluginargs)
         plugin_ins.keys_in = args.inexchange_list
         plugin_ins.keys_out = args.outexchange_list
-        agent = PluginTask(params,
+        agent = Task(params,
             args.inexchange_list, args.outexchange_list, plugin_ins)
         while True:
             agent.run()
@@ -202,6 +202,6 @@ def main():
         logger.error(traceback.format_exc())
 
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/plugintask.py -i raw_xauusd -i raw_gc -o cooked_data -f ./plugins/empty.py
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/task.py -i raw_xauusd -i raw_gc -o cooked_data -f ./plugins/empty.py
 if __name__ == '__main__':
     main()

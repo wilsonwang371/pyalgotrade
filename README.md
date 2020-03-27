@@ -66,8 +66,7 @@ The following graph shows how the components interconnect to each other.
 
 ### Key components
 
-*  Task: a normal task which can generate data and send to rabbitmq. (Retiring and we are going to convert them to Plugin task plugins)
-*  Plugin task: plugin task can load a plugin to either process incoming data or generate data or both.
+*  Task: a task can load a plugin to process incoming data and/or generate output data.
 *  Strategyd: read incoming data and send it to a live strategy state machine.
 
 
@@ -99,16 +98,13 @@ The following graph shows how the components interconnect to each other.
 
 ## Execution
 
-We need at least 3 components running
-
-*  Strategyd: a process that runs your strategy implemented as a subclass of StrategyFSM.
-*  Agent: fetch and/or generate data and send it to message queue for strategyd to consume.
-*  PluginTasks: users can implement their own plugin tasks to process incoming data from rabbitmq and generated output data and send to rabbitmq.
-*  RabbitMQ: message queue that receives and dispatch market data.
+TODO
 
 
 ## Example
+
 An example setup
+
 ```bash
 # by default, we assume rabbitmq is running on localhost
 
