@@ -5,15 +5,16 @@ import uuid
 import coloredlogs
 import pyalgotrade.logger
 import pymongo as pm
-from pyalgotrade.apps.utils.muxplugin import MuxPlugin
+import pymongo.errors as pe
+from pyalgotrade.apps.utils.plugin import Plugin
 from pyalgotrade.utils.misc import protected_function
 
 coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/multiplexer.py -i raw_xauusd -i raw_gc -f ./muxplugins/mongodbstore.py -a='-h localhost'
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/plugintask.py -i raw_xauusd -i raw_gc -f ./muxplugins/mongodbstore.py -a='-h localhost'
 
-class MongoDBMuxPlugin(MuxPlugin):
+class MongoDBPlugin(Plugin):
 
     def __init__(self, *inargs):
         logger.info('Initializing MongoDB plugin...')
@@ -33,6 +34,13 @@ class MongoDBMuxPlugin(MuxPlugin):
 
     @protected_function(None)
     def process(self, key, data):
+        try:
+            self.__process(key, data)
+        except pe.DuplicateKeyError:
+            logger.warning('Duplicated data cannot be inserted.')
+
+
+    def __process(self, key, data):
         assert 'symbol' in data
         assert 'timestamp' in data
         assert 'open' in data

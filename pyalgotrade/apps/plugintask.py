@@ -22,7 +22,7 @@ import pika
 import pyalgotrade.bar as bar
 import pyalgotrade.logger
 import pymongo.errors
-from pyalgotrade.apps.utils.muxplugin import MuxPlugin
+from pyalgotrade.apps.utils.plugin import Plugin
 from pyalgotrade.fsm import StateMachine, state
 from pyalgotrade.mq import MQConsumer, MQProducer
 from pyalgotrade.utils.misc import protected_function, pyGo
@@ -33,7 +33,7 @@ logger = pyalgotrade.logger.getLogger(__name__)
 DATA_EXPIRE_SECONDS = 120
 
 
-class MultiplexerFSMState(enum.Enum):
+class PluginTaskFSMState(enum.Enum):
 
     INIT = 1
     READY = 2
@@ -51,35 +51,33 @@ def load_plugin(filename):
     candids = []
     for i in dir(mod):
         item = getattr(mod, i)
-        if inspect.isclass(item) and MuxPlugin in item.__bases__:
+        if inspect.isclass(item) and Plugin in item.__bases__:
             candids.append(i)
     if len(candids) > 1:
-        raise ValueError('more than one MuxPlugin subclass. {}'.format(str(candids)))
+        raise ValueError('more than one Plugin subclass. {}'.format(str(candids)))
     if len(candids) == 0:
-        raise ValueError('no MuxPlugin subclass.')
+        raise ValueError('no Plugin subclass.')
     return (candids[0], getattr(mod, candids[0]))
 
 
-class Multiplexer(StateMachine):
+class PluginTask(StateMachine):
 
-    def __init__(self, params, inexchange_list, outexchange, plugin):
-        super(Multiplexer, self).__init__()
+    def __init__(self, params, inexchange_list, outexchange_list, plugin):
+        super(PluginTask, self).__init__()
         assert len(inexchange_list) != 0
         self.__params = params
         self.__inexchange_list = inexchange_list
-        self.__outexchange = outexchange
+        self.__outexchange_list = outexchange_list
         self.__plugin = plugin
 
-    @state(MultiplexerFSMState.INIT, True)
-    @protected_function(MultiplexerFSMState.ERROR)
+    @state(PluginTaskFSMState.INIT, True)
+    @protected_function(PluginTaskFSMState.ERROR)
     def state_init(self):
         self.__consumer = {}
-        self.last_values = {}
         self.__inbuf = Queue()
         for i in self.__inexchange_list:
             self.__consumer[i] = MQConsumer(self.__params, i,
-                queue_name='{}_mux_{}'.format(i.upper(), uuid.uuid4()))
-            self.last_values[i] = None
+                queue_name='{}_plugintask_{}'.format(i.upper(), uuid.uuid4()))
         def in_task(key, itm):
             while True:
                 tmp = itm.fetch_one()
@@ -88,41 +86,54 @@ class Multiplexer(StateMachine):
             self.__consumer[key].start()
             pyGo(in_task, key, val)
         
-        if self.__outexchange is None:
+        if self.__outexchange_list is None:
             self.__producer = None
             self.__outbuf = None
-            return MultiplexerFSMState.READY
-        self.__producer = MQProducer(self.__params, self.__outexchange)
-        expire = 1000 * DATA_EXPIRE_SECONDS
-        self.__producer.properties = pika.BasicProperties(expiration=str(expire))
+            return PluginTaskFSMState.READY
+        self.__producer = {}
+        for i in self.__outexchange_list:
+            self.__producer[i] = MQProducer(self.__params, i)
+            expire = 1000 * DATA_EXPIRE_SECONDS
+            self.__producer[i].properties = pika.BasicProperties(expiration=str(expire))
         self.__outbuf = Queue()
         def out_task():
             while True:
-                tmp = self.__outbuf.get()
-                self.__producer.put_one(tmp)
-        self.__producer.start()
+                try:
+                    tmp = self.__outbuf.get()
+                    if len(self.__producer) == 0:
+                        continue
+                    if len(self.__producer) == 1:
+                        list(self.__producer.values())[0].put_one(tmp)
+                    else:
+                        k, v = tmp
+                        self.__producer[k].put_one(v)
+                except Exception as e:
+                    logger.error('Error while getting data from output buffer. {}'.format(str(e)))
+        for key, val in six.iteritems(self.__producer):
+            self.__producer[key].start()
         pyGo(out_task)
-        return MultiplexerFSMState.READY
+        return PluginTaskFSMState.READY
 
-    @state(MultiplexerFSMState.READY, False)
-    @protected_function(MultiplexerFSMState.ERROR)
+    @state(PluginTaskFSMState.READY, False)
+    @protected_function(PluginTaskFSMState.ERROR)
     def state_ready(self):
         res = None
         try:
             key, itm = self.__inbuf.get()
             res = self.__plugin.process(key, itm)
         except Exception as e:
-            logger.error('Mux plugin exception {}.'.format(str(e)))
+            logger.warning('Plugin exception {}.'.format(str(e)))
+            return PluginTaskFSMState.READY
         if res is not None and self.__outbuf is not None:
             self.__outbuf.put(res)
-        return MultiplexerFSMState.READY
+        return PluginTaskFSMState.READY
     
-    @state(MultiplexerFSMState.RETRY, False)
-    @protected_function(MultiplexerFSMState.ERROR)
+    @state(PluginTaskFSMState.RETRY, False)
+    @protected_function(PluginTaskFSMState.ERROR)
     def state_retry(self):
-        return MultiplexerFSMState.READY
+        return PluginTaskFSMState.READY
     
-    @state(MultiplexerFSMState.ERROR, False)
+    @state(PluginTaskFSMState.ERROR, False)
     def state_error(self):
         logger.error('Fatal error, terminating...')
         sys.exit(errno.EFAULT)
@@ -130,20 +141,21 @@ class Multiplexer(StateMachine):
 
 def parse_args():
     parser = argparse.ArgumentParser(prog=sys.argv[0],
-        description='Multiplexer for multiple input data processing.')
+        description='PluginTask for multiple input data processing.')
     parser.add_argument('-i', '--inexchange', dest='inexchange_list',
         action='append', default=[],
         help=('input message exchange names, you can specify multiple '
             'inputs by using this option multiple times.'))
-    parser.add_argument('-o', '--outexchange', dest='outexchange',
-        default=None,
-        help='output message exchange name')
-    parser.add_argument('-f', '--muxplugin-file', dest='file',
+    parser.add_argument('-o', '--outexchange', dest='outexchange_list',
+        action='append', default=[],
+        help=('output message exchange names, you can specify multiple '
+            'outputs by using this option multiple times.'))
+    parser.add_argument('-f', '--plugin-file', dest='file',
         required=True,
-        help='multiplexer plugin python file to load.')
-    parser.add_argument('-a', '--muxplugin-args', dest='pluginargs',
+        help='PluginTask plugin python file to load.')
+    parser.add_argument('-a', '--plugin-args', dest='pluginargs',
         default=None,
-        help='multiplexer plugin initialization arguments.')
+        help='PluginTask plugin initialization arguments.')
 
     parser.add_argument('-U', '--user', dest='username',
         default='guest',
@@ -166,18 +178,20 @@ def main():
     else:
         pluginargs = []
 
-    _, muxplugin_class = load_plugin(args.file)
+    _, plugin_class = load_plugin(args.file)
     credentials = pika.PlainCredentials(args.username, args.password)
     params = pika.ConnectionParameters(host=args.host,
         socket_timeout=5,
         credentials=credentials,
         client_properties={
-            'connection_name': 'multiplexer',
+            'connection_name': 'PluginTask',
         })
     try:
-        agent = Multiplexer(params,
-            args.inexchange_list, args.outexchange,
-            muxplugin_class(*pluginargs))
+        plugin_ins = plugin_class(*pluginargs)
+        plugin_ins.keys_in = args.inexchange_list
+        plugin_ins.keys_out = args.outexchange_list
+        agent = PluginTask(params,
+            args.inexchange_list, args.outexchange_list, plugin_ins)
         while True:
             agent.run()
     except KeyboardInterrupt:
@@ -188,6 +202,6 @@ def main():
         logger.error(traceback.format_exc())
 
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/multiplexer.py -i raw_xauusd -i raw_gc -o processed_mux -f ./samples/muxplugins/mymuxplugin.py
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/plugintask.py -i raw_xauusd -i raw_gc -o cooked_data -f ./plugins/empty.py
 if __name__ == '__main__':
     main()
