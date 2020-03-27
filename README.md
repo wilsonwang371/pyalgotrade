@@ -100,6 +100,7 @@ We need at least 3 components running
 
 *  Strategyd: a process that runs your strategy implemented as a subclass of StrategyFSM.
 *  Agent: fetch and/or generate data and send it to message queue for strategyd to consume.
+*  PluginTasks: users can implement their own plugin tasks to process incoming data from rabbitmq and generated output data and send to rabbitmq.
 *  RabbitMQ: message queue that receives and dispatch market data.
 
 
@@ -108,11 +109,20 @@ An example for running a strategyd and ibagent is:
 ```bash
 # by default, we assume rabbitmq is running on localhost
 
-# to run ibagent
-python3 ./pyalgotrade/apps/ibagent.py -s XAUUSD -i raw_xauusd
+# a task for fetching spot gold
+python3 ./pyalgotrade/apps/fx678agent.py -s XAUUSD -o raw_xauusd
 
-# to run a strategyd
-python3 pyalgotrade/apps/strategyd.py -f ./samples/strategy/strategyfsm.py -s XAUUSD -i ts_xauusd
+# a task for fetching futures gold
+python3 ./pyalgotrade/apps/fx678agent.py -s @GC -o raw_gc
+
+# a task for comparing the diff between spot gold and futures gold
+python3 ./pyalgotrade/apps/plugintask.py -i raw_xauusd -i raw_gc -o cooked_diff -f ./plugins/gcdiff.py
+
+# a task for generating different frequency data
+python3 ./pyalgotrade/apps/timeseries.py -i raw_xauusd -o ts_xauusd -f hour -f day -r
+
+# if you have mongodb running on localhost:
+python3 ./pyalgotrade/apps/plugintask.py -i raw_xauusd -i raw_gc -f ./plugins/mongodbstore.py -a='-H localhost'
 ```
 
 
