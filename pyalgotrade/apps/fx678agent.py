@@ -69,7 +69,7 @@ def build_quote(symbol, exchange_name):
     apidict['st'] = random.random()
     return apidict
 
-def process_rawdata(raw_data):
+def process_rawdata(raw_data, symbol):
     """
     Convert raw json data to dataframe
     :return:
@@ -83,13 +83,14 @@ def process_rawdata(raw_data):
                 raw_data['c'], raw_data['v'])
     for i in tmp:
         t, o, h, l, c, v = i
+        data['symbol'] = symbol
+        data['timestamp'] = int(t) + 1
         data['open'] = float(o)
         data['high'] = float(h)
         data['low'] = float(l)
         data['close'] = float(c)
         data['volume'] = float(v)
         data['freq'] = Frequency.REALTIME
-        data['timestamp'] = int(t) + 1
         data['source'] = 'fx678'
     return data
 
@@ -163,7 +164,7 @@ class FX678DataAgent(StateMachine):
             logger.error('Download data failed')
             return FX678DataAgentFSMStates.RETRY
         raw_data = jsondata
-        data = process_rawdata(raw_data)
+        data = process_rawdata(raw_data, self.symbol)
 
         #logger.info('Got data: {}'.format(data))
         #Now we got the data, we need to dispatch it

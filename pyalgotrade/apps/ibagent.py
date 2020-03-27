@@ -100,8 +100,8 @@ class IBDataAgent(StateMachine):
                 'low': row['price'],
                 'close': row['price'],
                 'volume': row['price'],
+                'freq': bar.Frequency.REALTIME,
                 'source': row['source'],
-                'freq': bar.Frequency.REALTIME
             }
             logger.debug('Task running for tuple %s' % str(contract_tuple))
             logger.debug('data %s' % str(data))

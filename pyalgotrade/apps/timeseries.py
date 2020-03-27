@@ -197,12 +197,15 @@ class OHLCData:
             self.__low_val is None or self.__close_val is None):
             return None
         return {
+            'symbol': None, # populate this later
+            'timestamp': None, # populate this later
             'open': self.__open_val,
             'high': self.__high_val,
             'low': self.__low_val,
             'close': self.__close_val,
             'volume': self.__volume_val,
             'freq': self.__freq,
+            'source': 'TimeSeries',
             'ticks': self.__count,
         }
 
@@ -273,6 +276,7 @@ class TimeSeries(StateMachine):
                 itm['low'], itm['close'], itm['volume'])
             while not ohlcdata.empty():
                 newdata = ohlcdata.get()
+                newdata['symbol'] = itm['symbol'] if 'symbol' in itm else ''
                 self.__outbuf.put(newdata)
                 logger.info(newdata)
         return TimeSeriesFSMState.READY
