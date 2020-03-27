@@ -76,7 +76,7 @@ The following graph shows how the components interconnect to each other.
        |       |         |  RabbitMQ  |        |            |
        | Data  |         |            |        | Data       |
        | Agent --------------------------------> Processing |
-       |       |         |            |        |            |
+       | Task  |         |            |        | Task       |
        +-------+         |            |        |            |
                          |         |------------            |
                          |         |  |        |            |
@@ -85,14 +85,14 @@ The following graph shows how the components interconnect to each other.
        |       |     ----------/   |  |        |            |
        | Data  -----/    |         |  |        +------------+
        | Agent |         |         |  |                      
-       |       |         |         |  |        +------------+
+       | Task  |         |         |  |        +------------+
        +------------\    |         |  |        |            |
                      ----------\   |-----------> Strategyd  |
        +-------+         |      ---------\     |            |
        |       |         |            |   ----->            |
        | Data  |         |            |        |            |
        | Agent -------------------------------->            |
-       |       |         |            |        |            |
+       | Task  |         |            |        |            |
        +-------+         +------------+        +------------+
 ```
 
