@@ -9,7 +9,9 @@ logger = pyalgotrade.logger.getLogger(__name__)
 
 DIFF_THRESHOLD = 2.0
 
-class PrintChangePlugin(Plugin):
+class GCDiffPlugin(Plugin):
+    ''' Comparing the price difference between XAUUSD and GC
+    '''
 
     def __init__(self, *args):
         self.lastdiff = None
