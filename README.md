@@ -109,13 +109,13 @@ An example setup
 # by default, we assume rabbitmq is running on localhost
 
 # a task for fetching spot gold
-python3 ./pyalgotrade/apps/fx678agent.py -s XAUUSD -o raw_xauusd
+python3 ./pyalgotrade/apps/task.py -o raw_xauusd -f ./plugins/fx678agent.py -a='-s XAUUSD'
 
 # a task for fetching futures gold
-python3 ./pyalgotrade/apps/fx678agent.py -s @GC -o raw_gc
+python3 ./pyalgotrade/apps/task.py -o raw_gc -f ./plugins/fx678agent.py -a='-s @GC'
 
 # a task for comparing the diff between spot gold and futures gold
-python3 ./pyalgotrade/apps/plugintask.py -i raw_xauusd -i raw_gc -o cooked_diff -f ./plugins/gcdiff.py
+python3 ./pyalgotrade/apps/task.py -i raw_xauusd -i raw_gc -o cooked_diff -f ./plugins/gcdiff.py
 
 # a task for generating different frequency data
 python3 ./pyalgotrade/apps/timeseries.py -i raw_xauusd -o ts_xauusd -f hour -f day -r
