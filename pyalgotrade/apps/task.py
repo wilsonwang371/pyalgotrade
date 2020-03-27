@@ -64,7 +64,6 @@ class Task(StateMachine):
 
     def __init__(self, params, inexchange_list, outexchange_list, plugin):
         super(Task, self).__init__()
-        assert len(inexchange_list) != 0
         self.__params = params
         self.__inexchange_list = inexchange_list
         self.__outexchange_list = outexchange_list
@@ -87,8 +86,8 @@ class Task(StateMachine):
             pyGo(in_task, key, val)
         
         if self.__outexchange_list is None:
-            self.__producer = None
-            self.__outbuf = None
+            self.__producer = {}
+            self.__outbuf = Queue()
             return TaskFSMState.READY
         self.__producer = {}
         for i in self.__outexchange_list:
@@ -119,12 +118,15 @@ class Task(StateMachine):
     def state_ready(self):
         res = None
         try:
-            key, itm = self.__inbuf.get()
-            res = self.__plugin.process(key, itm)
+            if len(self.__consumer) != 0:
+                key, itm = self.__inbuf.get()
+                res = self.__plugin.process(key, itm)
+            else:
+                res = self.__plugin.process(None, None)
         except Exception as e:
             logger.warning('Plugin exception {}.'.format(str(e)))
             return TaskFSMState.READY
-        if res is not None and self.__outbuf is not None:
+        if res is not None:
             self.__outbuf.put(res)
         return TaskFSMState.READY
     
@@ -178,13 +180,13 @@ def main():
     else:
         pluginargs = []
 
-    _, plugin_class = load_plugin(args.file)
+    plugin_name, plugin_class = load_plugin(args.file)
     credentials = pika.PlainCredentials(args.username, args.password)
     params = pika.ConnectionParameters(host=args.host,
         socket_timeout=5,
         credentials=credentials,
         client_properties={
-            'connection_name': 'Task',
+            'connection_name': 'Task_{}'.format(plugin_name),
         })
     try:
         plugin_ins = plugin_class(*pluginargs)

@@ -12,7 +12,9 @@ class Plugin:
 
     @abc.abstractmethod
     def process(self, key, data):
-        # we need to return a tuple with a key and data
+        # Input: if no input queue declared, process() will be called
+        # in a loop with key and data as None
+        # Return: a tuple with a key and data
         raise NotImplementedError('Need to implement plugin process method')
 
     @property

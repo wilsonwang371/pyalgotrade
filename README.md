@@ -122,7 +122,7 @@ python3 ./pyalgotrade/apps/timeseries.py -i raw_xauusd -o ts_xauusd -f hour -f d
 
 # if you have mongodb running on localhost
 # run a plugin task to save all spot gold and futures gold data to mongodb
-python3 ./pyalgotrade/apps/plugintask.py -i raw_xauusd -i raw_gc -f ./plugins/mongodbstore.py -a='-H localhost'
+python3 ./pyalgotrade/apps/task.py -i raw_xauusd -i raw_gc -f ./plugins/mongodbstore.py -a='-H localhost'
 ```
 
 

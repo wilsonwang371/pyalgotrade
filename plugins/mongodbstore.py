@@ -12,7 +12,7 @@ from pyalgotrade.utils.misc import protected_function
 coloredlogs.install(level='INFO')
 logger = pyalgotrade.logger.getLogger(__name__)
 
-# PYTHONPATH='./' python3 ./pyalgotrade/apps/plugintask.py -i raw_xauusd -i raw_gc -f ./muxplugins/mongodbstore.py -a='-h localhost'
+# PYTHONPATH='./' python3 ./pyalgotrade/apps/task.py -i raw_xauusd -i raw_gc -f ./plugins/mongodbstore.py -a='-h localhost'
 
 class MongoDBPlugin(Plugin):
 

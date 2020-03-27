@@ -20,6 +20,7 @@ class PrintChangePlugin(Plugin):
         closevals = []
         tsvals = []
         self.values[key] = data
+        logger.info('{}: {}'.format(key, data))
         if len(self.values) != 2:
             return None
         for k, v in six.iteritems(self.values):
