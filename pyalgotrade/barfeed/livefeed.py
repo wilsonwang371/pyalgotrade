@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import os.path
-import pickle
 import sys
 import threading
 import time

@@ -44,6 +44,7 @@ PyAlgoTrade is developed and tested using Python 2.7/3.7 and depends on:
  * [pika](https://pypi.org/project/pika/) for RabbitMQ support
  * [coloredlogs](https://pypi.org/project/coloredlogs/) for Colored logging support.
  * [pymongo](https://api.mongodb.com/python/current/) for MongoDB support.
+ * [flask](https://flask.palletsprojects.com/en/1.1.x/) for Strategyd WebUI support
  
 You can install PyAlgoTrade using pip like this:
 

@@ -67,6 +67,10 @@ setup(
         "tornado",
         "tweepy",
         "ws4py>=0.3.4",
+        "coloredlogs",
+        "pymongo",
+        "pika",
+        "flask",
     ],
     extras_require={
         "TALib":  ["Cython", "TA-Lib"],
