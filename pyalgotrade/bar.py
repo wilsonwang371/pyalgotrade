@@ -258,17 +258,19 @@ class Bars(object):
         All bars must have the same datetime.
     """
 
-    def __init__(self, barDict, frequecy=None):
+    def __init__(self, barDict):
         if len(barDict) == 0:
             raise Exception("No bars supplied")
 
         # Check that bar datetimes are in sync
         firstDateTime = None
         firstInstrument = None
+        firstFreq = None
         for instrument, currentBar in six.iteritems(barDict):
             if firstDateTime is None:
                 firstDateTime = currentBar.getDateTime()
                 firstInstrument = instrument
+                firstFreq = currentBar.getFrequency()
             elif currentBar.getDateTime() != firstDateTime:
                 raise Exception("Bar data times are not in sync. %s %s != %s %s" % (
                     instrument,
@@ -276,10 +278,11 @@ class Bars(object):
                     firstInstrument,
                     firstDateTime
                 ))
+            assert firstFreq == currentBar.getFrequency()
 
         self.__barDict = barDict
         self.__dateTime = firstDateTime
-        self.__frequency = frequecy
+        self.__frequency = firstFreq
 
     def __getitem__(self, instrument):
         """Returns the :class:`pyalgotrade.bar.Bar` for the given instrument.
