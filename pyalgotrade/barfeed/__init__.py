@@ -120,7 +120,8 @@ class BaseBarFeed(feed.BaseFeed):
         return (dateTime, bars, freq)
 
     def getFrequency(self):
-        return self.__frequencies
+        assert isinstance(self.__frequencies, list) and len(self.__frequencies) == 1
+        return self.__frequencies[0]
 
     def isIntraday(self):
         for i in self.__frequencies:
