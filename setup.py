@@ -39,7 +39,10 @@ setup(
     ],
     packages=[
         'pyalgotrade',
+        'pyalgotrade.apps',
+        'pyalgotrade.apps.utils',
         'pyalgotrade.barfeed',
+        'pyalgotrade.barfeed.driver',
         'pyalgotrade.bitcoincharts',
         'pyalgotrade.bitstamp',
         'pyalgotrade.broker',
