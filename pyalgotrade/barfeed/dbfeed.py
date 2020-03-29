@@ -26,7 +26,7 @@ class Database(object):
             self.addBar(instrument, bar, frequency)
 
     def addBarsFromFeed(self, feed):
-        for dateTime, bars in feed:
+        for dateTime, bars, _ in feed:
             if bars:
                 self.addBars(bars, feed.getFrequency())
 
