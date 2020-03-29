@@ -91,6 +91,8 @@ class BaseFeed(observer.Subject):
                     ds = self.__ds[key][freq]
                 except KeyError:
                     ds = self.createDataSeries(key, self.__maxLen)
+                    if key not in self.__ds.keys():
+                        self.__ds[key] = {}
                     self.__ds[key][freq] = ds
                 ds.appendWithDateTime(dateTime, value)
         return (dateTime, values, freq)
