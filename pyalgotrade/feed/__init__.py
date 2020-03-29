@@ -72,14 +72,14 @@ class BaseFeed(observer.Subject):
     def getNextValues(self):
         raise NotImplementedError()
 
-    def registerDataSeries(self, key, freq = bar.Frequency.TRADE):
-        if key not in self.__ds.keys():
+    def registerDataSeries(self, key, freq = bar.Frequency.UNKNOWN):
+        if key not in self.__ds:
             self.__ds[key] = {}
-        self.__ds[key][freq] = self.createDataSeries(key, self.__maxLen)
         for i in self.__registered_ds:
             k, v = i
             if k == key and v == freq:
                 return
+        self.__ds[key][freq] = self.createDataSeries(key, self.__maxLen)
         self.__registered_ds.append((key, freq))
 
     def getNextValuesAndUpdateDS(self):
