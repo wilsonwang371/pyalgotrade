@@ -124,8 +124,8 @@ class BaseFeed(observer.Subject):
             key, freq = val
             return self.__ds[key][freq]
         else:
-            assert len(self.__ds[key]) == 1
-            return list(self.__ds[key].values())[0]
+            assert len(self.__ds[val]) == 1
+            return list(self.__ds[val].values())[0]
 
     def __contains__(self, val):
         """Returns True if a :class:`pyalgotrade.dataseries.DataSeries` for the given key is available."""
