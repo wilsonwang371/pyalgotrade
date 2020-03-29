@@ -160,7 +160,7 @@ class BaseBarFeed(feed.BaseFeed):
         """
         if instrument is None:
             instrument = self.__defaultInstrument
-        return self[instrument, freq]
+        return self[instrument, freq] if freq is not None else self[instrument]
 
     def getDispatchPriority(self):
         return dispatchprio.BAR_FEED
