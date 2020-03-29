@@ -129,8 +129,11 @@ class BaseFeed(observer.Subject):
 
     def __contains__(self, val):
         """Returns True if a :class:`pyalgotrade.dataseries.DataSeries` for the given key is available."""
-        key, freq = val
-        if freq is not None:
+        if isinstance(val, tuple):
+            key, freq = val
+        else:
+            key, freq = val, None
+        if freq is None:
             return key in self.__ds
         else:
             return (key in self.__ds and freq in self.__ds[key])
