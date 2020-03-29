@@ -115,5 +115,5 @@ class BarFeed(barfeed.BaseBarFeed):
         return bar.Bars(ret)
 
     def loadAll(self):
-        for dateTime, bars in self:
+        for dateTime, bars, freq in self:
             pass
