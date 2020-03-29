@@ -18,8 +18,7 @@
 .. moduleauthor:: Gabriel Martin Becedillas Ruiz <gabriel.becedillas@gmail.com>
 """
 
-from pyalgotrade import feed
-from pyalgotrade import dataseries
+from pyalgotrade import bar, dataseries, feed
 
 
 class MemFeed(feed.BaseFeed):
@@ -64,7 +63,7 @@ class MemFeed(feed.BaseFeed):
         if self.__nextIdx < len(self.__values):
             ret = self.__values[self.__nextIdx]
             self.__nextIdx += 1
-        return ret
+        return ret, bar.Frequency.UNKNOWN
 
     # Add values to the feed. values should be a sequence of tuples. The tuples should have two elements:
     # 1: datetime.datetime.
