@@ -120,8 +120,12 @@ class BaseFeed(observer.Subject):
 
     def __getitem__(self, val):
         """Returns the :class:`pyalgotrade.dataseries.DataSeries` for a given key."""
-        key, freq = val
-        return self.__ds[key][freq]
+        if isinstance(val, tuple):
+            key, freq = val
+            return self.__ds[key][freq]
+        else:
+            assert len(self.__ds[key]) == 1
+            return list(self.__ds[key].values())[0]
 
     def __contains__(self, val):
         """Returns True if a :class:`pyalgotrade.dataseries.DataSeries` for the given key is available."""

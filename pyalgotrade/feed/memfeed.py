@@ -60,7 +60,7 @@ class MemFeed(feed.BaseFeed):
         return dataseries.SequenceDataSeries(maxLen)
 
     def getNextValues(self):
-        ret = (None, None)
+        ret = (None, None, None)
         if self.__nextIdx < len(self.__values):
             ret = self.__values[self.__nextIdx]
             self.__nextIdx += 1
