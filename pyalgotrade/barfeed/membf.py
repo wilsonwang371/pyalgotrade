@@ -72,7 +72,8 @@ class BarFeed(barfeed.BaseBarFeed):
         self.__bars[instrument].extend(bars)
         self.__bars[instrument].sort(key=lambda b: b.getDateTime())
 
-        self.registerInstrument(instrument, bars[0].getFrequency() if isinstance(bars, list) else bar.Frequency.UNKNOWN)
+        self.registerInstrument(instrument,
+            bars[0].getFrequency() if len(bars) != 0 else bar.Frequency.UNKNOWN)
 
     def eof(self):
         ret = True
