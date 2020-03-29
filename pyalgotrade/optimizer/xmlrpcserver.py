@@ -157,7 +157,7 @@ class Server(xmlrpc_server.SimpleXMLRPCServer):
             # Initialize instruments, bars and parameters.
             logger.info("Loading bars")
             loadedBars = []
-            for dateTime, bars in self.__barFeed:
+            for dateTime, bars, freq in self.__barFeed:
                 loadedBars.append(bars)
             instruments = self.__barFeed.getRegisteredInstruments()
             self.__instrumentsAndBars = serialization.dumps((instruments, loadedBars))
