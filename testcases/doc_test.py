@@ -45,6 +45,7 @@ class TutorialsTestCase(common.TestCase):
                 common.head_file("tutorial-1.output", 3),
                 res.get_output_lines(True)[:3]
             )
+            print(res.get_output_lines(True))
             self.assertEqual(
                 common.tail_file("tutorial-1.output", 3),
                 res.get_output_lines(True)[-3:]
