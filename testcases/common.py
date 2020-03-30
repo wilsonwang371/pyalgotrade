@@ -61,7 +61,7 @@ def run_cmd(cmd):
 
 
 def run_python_code(code):
-    cmd = ["python"]
+    cmd = [sys.executable]
     cmd.append("-u")
     cmd.append("-c")
     cmd.append(code)

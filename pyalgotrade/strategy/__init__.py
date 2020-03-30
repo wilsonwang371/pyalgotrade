@@ -33,7 +33,7 @@ from pyalgotrade.barfeed import resampled
 from pyalgotrade.broker import backtesting
 from pyalgotrade.strategy.state import StrategyState
 
-coloredlogs.install(level='INFO')
+#coloredlogs.install(level='INFO')
 log = pyalgotrade.logger.getLogger('strategy')
 
 
