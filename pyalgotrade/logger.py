@@ -22,18 +22,25 @@ import logging
 import threading
 import sys
 from logging.handlers import RotatingFileHandler, SysLogHandler
-
+import os
+import coloredlogs
 
 initLock = threading.Lock()
 rootLoggerInitialized = False
 
-log_format = "%(asctime)s %(name)s [%(levelname)s] %(message)s"
-#log_format = ("%(asctime)s %(name)s %(process)d [%(levelname)s] "
-#              "%(module)s - %(funcName)s: %(message)s")
+if 'TESTING' in os.environ and os.environ['TESTING'] != '0':
+    log_format = "%(asctime)s %(name)s [%(levelname)s] %(message)s"
+    sys_log = False
+else:
+    log_format = ("%(asctime)s %(name)s %(process)d [%(levelname)s] "
+        "%(module)s - %(funcName)s: %(message)s")
+    sys_log = True
+    coloredlogs.install(level='INFO')
+
 level = logging.INFO
 file_log = None  # File name
 console_log = True
-sys_log = False
+
 
 def init_handler(handler):
     handler.setFormatter(Formatter(log_format))

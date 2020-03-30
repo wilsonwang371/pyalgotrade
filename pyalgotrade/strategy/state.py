@@ -3,7 +3,7 @@ import json
 import coloredlogs
 import pyalgotrade.logger
 
-#coloredlogs.install(level='INFO')
+
 logger = pyalgotrade.logger.getLogger('strategystate')
 
 

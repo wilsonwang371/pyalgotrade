@@ -23,7 +23,6 @@ import logging
 
 import six
 
-import coloredlogs
 import pyalgotrade.broker
 import pyalgotrade.fsm as fsm
 import pyalgotrade.logger
@@ -33,7 +32,7 @@ from pyalgotrade.barfeed import resampled
 from pyalgotrade.broker import backtesting
 from pyalgotrade.strategy.state import StrategyState
 
-#coloredlogs.install(level='INFO')
+
 log = pyalgotrade.logger.getLogger('strategy')
 
 
