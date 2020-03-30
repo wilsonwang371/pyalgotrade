@@ -27,12 +27,13 @@ from logging.handlers import RotatingFileHandler, SysLogHandler
 initLock = threading.Lock()
 rootLoggerInitialized = False
 
-log_format = ("%(asctime)s %(name)s %(process)d [%(levelname)s] "
-              "%(module)s - %(funcName)s: %(message)s")
+log_format = "%(asctime)s %(name)s [%(levelname)s] %(message)s"
+#log_format = ("%(asctime)s %(name)s %(process)d [%(levelname)s] "
+#              "%(module)s - %(funcName)s: %(message)s")
 level = logging.INFO
 file_log = None  # File name
 console_log = True
-sys_log = True
+sys_log = False
 
 def init_handler(handler):
     handler.setFormatter(Formatter(log_format))

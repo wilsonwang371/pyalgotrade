@@ -41,7 +41,7 @@ class TutorialsTestCase(common.TestCase):
     def testTutorial1(self):
         with common.CopyFiles([os.path.join("testcases", "data", "WIKI-ORCL-2000-quandl.csv")], "."):
             res = common.run_sample_module("tutorial-1")
-            print(res.get_output_lines(False))
+            print(res.get_output_lines(True))
             self.assertEqual(
                 common.head_file("tutorial-1.output", 3),
                 res.get_output_lines(True)[:3]
