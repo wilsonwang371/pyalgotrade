@@ -27,7 +27,7 @@ from logging.handlers import RotatingFileHandler, SysLogHandler
 initLock = threading.Lock()
 rootLoggerInitialized = False
 
-log_format = "%(asctime)s %(name)s [%(levelname)s] %(message)s"
+log_format = "%(asctime)-15s %(name)s [[%(levelname)s] %(message)s"
 #log_format = ("%(asctime)s %(name)s %(process)d [%(levelname)s] "
 #              "%(module)s - %(funcName)s: %(message)s")
 level = logging.INFO
